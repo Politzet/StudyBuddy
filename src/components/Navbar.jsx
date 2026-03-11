@@ -33,11 +33,8 @@ function Navbar() {
             onClick={toggleTheme}
             className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-700"
           >
-            Toggle Theme
+            {isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           </button>
-          <span className="ml-1 text-sm">
-            Current Mode: {isDark ? 'Dark' : 'Light'}
-          </span>
         </nav>
       </div>
     </header>
