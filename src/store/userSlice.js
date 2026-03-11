@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit'
 const initialState = {
   user: null,
   isLoggedIn: false,
+  lastTaskAdded: '',
 }
 
 const userSlice = createSlice({
@@ -22,8 +23,12 @@ const userSlice = createSlice({
         state.user.name = action.payload
       }
     },
+    setLastTaskAdded: (state, action) => {
+      state.lastTaskAdded = action.payload
+    },
   },
 })
 
-export const { login, logout, updateUsername } = userSlice.actions
+export const { login, logout, updateUsername, setLastTaskAdded } =
+  userSlice.actions
 export default userSlice.reducer

@@ -1,18 +1,25 @@
 import { useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { useTheme } from '../context/ThemeContext'
 import useLocalStorage from '../hooks/useLocalStorage'
+import { setLastTaskAdded } from '../store/userSlice'
+import defaultTasks from '../data/defaultTasks'
 
 const initialForm = {
   taskName: '',
   course: '',
   difficulty: 1,
+  dueDate: '',
 }
 
 function AddTaskPage() {
+  const dispatch = useDispatch()
+  const { isLoggedIn, lastTaskAdded } = useSelector((state) => state.user)
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
   const [formData, setFormData] = useLocalStorage('add-task-form', initialForm)
+  const [, setTasks] = useLocalStorage('studybuddy-tasks', defaultTasks)
   const [errors, setErrors] = useState({})
 
   const handleChange = (event) => {
@@ -38,6 +45,10 @@ function AddTaskPage() {
       validationErrors.difficulty = 'רמת קושי חייבת להיות בין 1 ל-5'
     }
 
+    if (!formData.dueDate) {
+      validationErrors.dueDate = 'יש לבחור תאריך ושעת הגשה'
+    }
+
     return validationErrors
   }
 
@@ -50,7 +61,16 @@ function AddTaskPage() {
       return
     }
 
+    const newTask = {
+      id: Date.now(),
+      title: formData.taskName.trim(),
+      courseName: formData.course,
+      dueDate: formData.dueDate,
+    }
+
+    setTasks((prevTasks) => [...prevTasks, newTask])
     console.log('Submitted task:', formData)
+    dispatch(setLastTaskAdded(formData.taskName.trim()))
     setFormData(initialForm)
   }
 
@@ -60,7 +80,12 @@ function AddTaskPage() {
     >
       <h2 className="text-2xl font-bold">Add New Task</h2>
       <p className={`mt-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-        Fill the form and submit to log task data.
+        Fill in the details to add your next study task.
+      </p>
+      <p className={`mt-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+        {isLoggedIn
+          ? `Last task added: ${lastTaskAdded || 'No task added yet'}`
+          : 'Log in to track the last task you added.'}
       </p>
 
       <form
@@ -108,7 +133,7 @@ function AddTaskPage() {
                 : 'border-slate-300 bg-white text-slate-900'
             }`}
           >
-            <option value="">בחרי קורס</option>
+            <option value="">Please select</option>
             <option value="מבוא לתכנות">מבוא לתכנות</option>
             <option value="אלגוריתמים">אלגוריתמים</option>
             <option value="מארג שירותי אינטרנט">מארג שירותי אינטרנט</option>
@@ -138,6 +163,27 @@ function AddTaskPage() {
           />
           {errors.difficulty ? (
             <p className="mt-1 text-sm text-red-600">{errors.difficulty}</p>
+          ) : null}
+        </div>
+
+        <div className="mt-4">
+          <label htmlFor="dueDate" className="mb-1 block text-sm font-medium">
+            תאריך ושעת הגשה
+          </label>
+          <input
+            id="dueDate"
+            name="dueDate"
+            type="datetime-local"
+            value={formData.dueDate || ''}
+            onChange={handleChange}
+            className={`w-full rounded-md border px-3 py-2 focus:border-blue-500 focus:outline-none ${
+              isDark
+                ? 'border-slate-600 bg-slate-800 text-white'
+                : 'border-slate-300 bg-white text-slate-900'
+            }`}
+          />
+          {errors.dueDate ? (
+            <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>
           ) : null}
         </div>
 
