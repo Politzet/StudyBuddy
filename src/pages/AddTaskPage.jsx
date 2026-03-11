@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useTheme } from '../context/ThemeContext'
 import useLocalStorage from '../hooks/useLocalStorage'
 import { setLastTaskAdded } from '../store/userSlice'
-import defaultTasks from '../data/defaultTasks'
+import { API_BASE_URL } from '../config/api'
 
 const initialForm = {
   taskName: '',
@@ -19,8 +19,10 @@ function AddTaskPage() {
   const isDark = theme === 'dark'
 
   const [formData, setFormData] = useLocalStorage('add-task-form', initialForm)
-  const [, setTasks] = useLocalStorage('studybuddy-tasks', defaultTasks)
   const [errors, setErrors] = useState({})
+  const [submitError, setSubmitError] = useState('')
+  const [submitSuccess, setSubmitSuccess] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -52,26 +54,52 @@ function AddTaskPage() {
     return validationErrors
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     const validationErrors = validateForm()
     setErrors(validationErrors)
+    setSubmitError('')
+    setSubmitSuccess('')
 
     if (Object.keys(validationErrors).length > 0) {
       return
     }
 
     const newTask = {
-      id: Date.now(),
       title: formData.taskName.trim(),
-      courseName: formData.course,
+      course: formData.course,
+      difficulty: formData.difficulty,
       dueDate: formData.dueDate,
     }
 
-    setTasks((prevTasks) => [...prevTasks, newTask])
-    console.log('Submitted task:', formData)
-    dispatch(setLastTaskAdded(formData.taskName.trim()))
-    setFormData(initialForm)
+    try {
+      setIsSubmitting(true)
+      const response = await fetch(`${API_BASE_URL}/api/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTask),
+      })
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}))
+        const message =
+          errorBody.message ||
+          (Array.isArray(errorBody.details) ? errorBody.details.join(', ') : '') ||
+          'Failed to save task'
+        throw new Error(message)
+      }
+
+      dispatch(setLastTaskAdded(formData.taskName.trim()))
+      setFormData(initialForm)
+      setErrors({})
+      setSubmitSuccess('Task added successfully.')
+    } catch (error) {
+      setSubmitError(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -87,6 +115,12 @@ function AddTaskPage() {
           ? `Last task added: ${lastTaskAdded || 'No task added yet'}`
           : 'Log in to track the last task you added.'}
       </p>
+      {submitError ? (
+        <p className="mt-2 text-sm text-red-600">{submitError}</p>
+      ) : null}
+      {submitSuccess ? (
+        <p className="mt-2 text-sm text-emerald-600">{submitSuccess}</p>
+      ) : null}
 
       <form
         onSubmit={handleSubmit}
@@ -189,9 +223,10 @@ function AddTaskPage() {
 
         <button
           type="submit"
+          disabled={isSubmitting}
           className="mt-6 rounded-md bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700"
         >
-          Submit
+          {isSubmitting ? 'Saving...' : 'Submit'}
         </button>
       </form>
     </section>

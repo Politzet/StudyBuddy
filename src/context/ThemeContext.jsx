@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext } from 'react'
 import useLocalStorage from '../hooks/useLocalStorage'
 
 const ThemeContext = createContext(null)
@@ -10,13 +11,10 @@ function ThemeProvider({ children }) {
     setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'))
   }
 
-  const value = useMemo(
-    () => ({
-      theme,
-      toggleTheme,
-    }),
-    [theme],
-  )
+  const value = {
+    theme,
+    toggleTheme,
+  }
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
