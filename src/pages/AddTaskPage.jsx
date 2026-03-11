@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTheme } from '../context/ThemeContext'
 
 const initialForm = {
   taskName: '',
@@ -7,6 +8,9 @@ const initialForm = {
 }
 
 function AddTaskPage() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+
   const [formData, setFormData] = useState(initialForm)
   const [errors, setErrors] = useState({})
 
@@ -50,15 +54,21 @@ function AddTaskPage() {
   }
 
   return (
-    <section>
+    <section
+      className={`rounded-xl p-6 ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'}`}
+    >
       <h2 className="text-2xl font-bold">Add New Task</h2>
-      <p className="mt-2 text-slate-600">
+      <p className={`mt-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
         Fill the form and submit to log task data.
       </p>
 
       <form
         onSubmit={handleSubmit}
-        className="mt-6 max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+        className={`mt-6 max-w-xl rounded-xl border p-6 shadow-sm ${
+          isDark
+            ? 'border-slate-700 bg-slate-900 text-white'
+            : 'border-slate-200 bg-white text-slate-900'
+        }`}
       >
         <div>
           <label htmlFor="taskName" className="mb-1 block text-sm font-medium">
@@ -70,7 +80,11 @@ function AddTaskPage() {
             type="text"
             value={formData.taskName}
             onChange={handleChange}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className={`w-full rounded-md border px-3 py-2 focus:border-blue-500 focus:outline-none ${
+              isDark
+                ? 'border-slate-600 bg-slate-800 text-white'
+                : 'border-slate-300 bg-white text-slate-900'
+            }`}
             placeholder="לדוגמה: סיכום פרק 3"
           />
           {errors.taskName ? (
@@ -87,7 +101,11 @@ function AddTaskPage() {
             name="course"
             value={formData.course}
             onChange={handleChange}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className={`w-full rounded-md border px-3 py-2 focus:border-blue-500 focus:outline-none ${
+              isDark
+                ? 'border-slate-600 bg-slate-800 text-white'
+                : 'border-slate-300 bg-white text-slate-900'
+            }`}
           >
             <option value="">בחרי קורס</option>
             <option value="מבוא לתכנות">מבוא לתכנות</option>
@@ -111,7 +129,11 @@ function AddTaskPage() {
             max="5"
             value={formData.difficulty}
             onChange={handleChange}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className={`w-full rounded-md border px-3 py-2 focus:border-blue-500 focus:outline-none ${
+              isDark
+                ? 'border-slate-600 bg-slate-800 text-white'
+                : 'border-slate-300 bg-white text-slate-900'
+            }`}
           />
           {errors.difficulty ? (
             <p className="mt-1 text-sm text-red-600">{errors.difficulty}</p>
