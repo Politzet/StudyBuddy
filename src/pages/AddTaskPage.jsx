@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTheme } from '../context/ThemeContext'
+import useLocalStorage from '../hooks/useLocalStorage'
 
 const initialForm = {
   taskName: '',
@@ -11,7 +12,7 @@ function AddTaskPage() {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const [formData, setFormData] = useState(initialForm)
+  const [formData, setFormData] = useLocalStorage('add-task-form', initialForm)
   const [errors, setErrors] = useState({})
 
   const handleChange = (event) => {
