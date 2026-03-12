@@ -177,6 +177,11 @@ function AddTaskPage() {
   }
 
   const handleDeleteCourse = async (courseId) => {
+    const shouldDelete = window.confirm('Are you sure you want to delete?')
+    if (!shouldDelete) {
+      return
+    }
+
     setCourseActionError('')
     try {
       const response = await fetch(`${API_BASE_URL}/api/courses/${courseId}`, {

@@ -1,9 +1,15 @@
-function ResourceCard({ article }) {
+function ResourceCard({ article, isDark = false }) {
   const fallbackDescription =
     'No description available for this study resource.'
 
   return (
-    <article className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+    <article
+      className={`overflow-hidden rounded-lg border shadow-sm ${
+        isDark
+          ? 'border-slate-700 bg-slate-900'
+          : 'border-slate-200 bg-white'
+      }`}
+    >
       <img
         src={
           article.urlToImage ||
@@ -14,14 +20,18 @@ function ResourceCard({ article }) {
       />
       <div className="p-4">
         {article.sourceCourse ? (
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-600">
+          <p
+            className={`mb-2 text-xs font-semibold uppercase tracking-wide ${
+              isDark ? 'text-indigo-300' : 'text-indigo-600'
+            }`}
+          >
             Related to: {article.sourceCourse}
           </p>
         ) : null}
-        <h3 className="text-base font-semibold text-slate-900">
+        <h3 className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
           Study Resource: {article.title}
         </h3>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className={`mt-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
           Description: {article.description || fallbackDescription}
         </p>
         <a

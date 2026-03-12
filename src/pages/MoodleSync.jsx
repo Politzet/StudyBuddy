@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import useFetch from '../hooks/useFetch'
 import { API_BASE_URL } from '../config/api'
+import { useTheme } from '../context/ThemeContext'
 
 function MoodleSync() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [importingId, setImportingId] = useState('')
   const [importDraft, setImportDraft] = useState(null)
   const [message, setMessage] = useState('')
@@ -78,11 +81,15 @@ function MoodleSync() {
   }
 
   return (
-    <section className="rounded-xl bg-white p-6 shadow-sm">
+    <section
+      className={`rounded-xl p-6 shadow-sm ${
+        isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'
+      }`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Moodle Sync</h2>
-          <p className="mt-1 text-slate-600">
+          <h2 className="text-2xl font-bold">Moodle Sync</h2>
+          <p className={`mt-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
             Sync assignments from Moodle simulator and import them to your tasks.
           </p>
         </div>
@@ -96,31 +103,61 @@ function MoodleSync() {
       </div>
 
       {loading ? (
-        <div className="mt-6 flex items-center justify-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-5 text-blue-700">
+        <div
+          className={`mt-6 flex items-center justify-center gap-3 rounded-lg border px-4 py-5 ${
+            isDark
+              ? 'border-blue-800 bg-blue-950 text-blue-200'
+              : 'border-blue-200 bg-blue-50 text-blue-700'
+          }`}
+        >
           <span className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
           <span className="font-medium">Syncing assignments...</span>
         </div>
       ) : null}
 
       {error ? (
-        <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+        <div
+          className={`mt-6 rounded-lg border px-4 py-3 ${
+            isDark
+              ? 'border-red-900 bg-red-950 text-red-200'
+              : 'border-red-200 bg-red-50 text-red-700'
+          }`}
+        >
           Error: {error}
         </div>
       ) : null}
 
       {message ? (
-        <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">
+        <div
+          className={`mt-4 rounded-md border px-4 py-3 ${
+            isDark
+              ? 'border-emerald-900 bg-emerald-950 text-emerald-200'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          }`}
+        >
           {message}
         </div>
       ) : null}
       {errorMessage ? (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+        <div
+          className={`mt-4 rounded-md border px-4 py-3 ${
+            isDark
+              ? 'border-red-900 bg-red-950 text-red-200'
+              : 'border-red-200 bg-red-50 text-red-700'
+          }`}
+        >
           {errorMessage}
         </div>
       ) : null}
 
       {importDraft ? (
-        <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+        <div
+          className={`mt-4 rounded-md border px-4 py-3 text-sm ${
+            isDark
+              ? 'border-slate-700 bg-slate-900 text-slate-200'
+              : 'border-slate-200 bg-slate-50 text-slate-700'
+          }`}
+        >
           Prepared for import: <span className="font-medium">{importDraft.title}</span>{' '}
           ({importDraft.course})
         </div>
@@ -131,11 +168,19 @@ function MoodleSync() {
           {moodleAssignments.map((assignment) => (
             <li
               key={assignment.moodleId}
-              className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+              className={`rounded-lg border p-4 ${
+                isDark
+                  ? 'border-slate-700 bg-slate-900'
+                  : 'border-slate-200 bg-slate-50'
+              }`}
             >
-              <h3 className="text-base font-semibold text-slate-900">{assignment.title}</h3>
-              <p className="mt-1 text-sm text-slate-600">Course: {assignment.courseName}</p>
-              <p className="mt-1 text-sm text-slate-600">
+              <h3 className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {assignment.title}
+              </h3>
+              <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                Course: {assignment.courseName}
+              </p>
+              <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                 Due: {new Date(assignment.dueDate).toLocaleString()}
               </p>
               <button

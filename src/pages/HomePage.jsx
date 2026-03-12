@@ -81,6 +81,11 @@ function HomePage() {
   }
 
   const handleDeleteTask = async (taskId) => {
+    const shouldDelete = window.confirm('Are you sure you want to delete?')
+    if (!shouldDelete) {
+      return
+    }
+
     setTaskMutationError('')
     try {
       const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {

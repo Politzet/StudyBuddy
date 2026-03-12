@@ -2,13 +2,16 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
+import bcrypt from 'bcrypt'
 import Task from './models/Task.js'
 import Course from './models/Course.js'
+import User from './models/User.js'
 
 dotenv.config()
 
 const app = express()
 const port = Number(process.env.PORT) || 5000
+const PASSWORD_SALT_ROUNDS = 10
 
 app.use(
   cors({
@@ -142,6 +145,64 @@ const shuffleArray = (items) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
+})
+
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, userName, password } = req.body
+    const hashedPassword = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS)
+    const user = await User.create({ email, userName, password: hashedPassword })
+    return res.status(201).json({
+      _id: user._id,
+      email: user.email,
+      userName: user.userName,
+    })
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Email already registered' })
+    }
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        message: 'Validation failed',
+        details: formatValidationError(error),
+      })
+    }
+    return res.status(500).json({ message: 'Failed to create account' })
+  }
+})
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body
+    const user = await User.findOne({ email: String(email).toLowerCase().trim() })
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' })
+    }
+
+    const isHashedPassword = user.password.startsWith('$2')
+    const isPasswordValid = isHashedPassword
+      ? await bcrypt.compare(password, user.password)
+      : user.password === password
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid email or password' })
+    }
+
+    // Upgrade legacy plaintext passwords to bcrypt on successful login.
+    if (!isHashedPassword) {
+      user.password = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS)
+      await user.save()
+    }
+
+    return res.json({
+      _id: user._id,
+      email: user.email,
+      userName: user.userName,
+    })
+  } catch {
+    return res.status(500).json({ message: 'Failed to login' })
+  }
 })
 
 app.get('/api/moodle/sync', (_req, res) => {

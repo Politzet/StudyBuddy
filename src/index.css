@@ -1,7 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap');
 @import 'tailwindcss';
 
 body {
   margin: 0;
   min-width: 320px;
-  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Atkinson Hyperlegible', 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana,
+    sans-serif;
 }
