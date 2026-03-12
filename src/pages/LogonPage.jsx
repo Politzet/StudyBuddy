@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { API_BASE_URL } from '../config/api'
 import { login } from '../store/userSlice'
+import { getAlertClass } from '../styles/alertStyles'
 
 const bgCandidates = [
   '/src/assets/images/logon page background.png',
@@ -99,7 +100,11 @@ function LogonPage() {
             />
           </div>
 
-          {error ? <p className="mb-3 text-center text-sm text-red-700">{error}</p> : null}
+          {error ? (
+            <div className={getAlertClass('error', false)}>
+              <p className="text-center">{error}</p>
+            </div>
+          ) : null}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>

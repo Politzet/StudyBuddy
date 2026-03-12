@@ -4,6 +4,7 @@ import TaskCard from '../components/TaskCard'
 import { useTheme } from '../context/ThemeContext'
 import useFetch from '../hooks/useFetch'
 import { API_BASE_URL } from '../config/api'
+import { getAlertActionClass, getAlertClass } from '../styles/alertStyles'
 import {
   TASK_STATUS_OPTIONS,
   TASK_STATUS_SORT_ORDER,
@@ -124,10 +125,14 @@ function HomePage() {
 
   return (
     <section
-      className={`rounded-xl p-6 ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'}`}
+      className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm ${
+        isDark
+          ? 'border-[#5a463b] bg-[#2d221d]/85 text-[#f6ede6]'
+          : 'border-[#d9c7b8] bg-[#fff8f1]/88 text-[#453434]'
+      }`}
     >
       <h2 className="text-2xl font-bold">My Study Tasks</h2>
-      <p className={`mt-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+      <p className={`mt-2 text-sm ${isDark ? 'text-[#e8d9cd]' : 'text-[#6b5447]'}`}>
         {isLoggedIn
           ? `Welcome back, ${user?.name ?? 'Student'}! Ready to study?`
           : 'Welcome, Guest! Log in to personalize your experience.'}
@@ -139,19 +144,19 @@ function HomePage() {
         </p>
       ) : null}
       {tasksError ? (
-        <div className="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+        <div className={getAlertClass('error', isDark)}>
           <p>Could not load tasks: {tasksError}</p>
           <button
             type="button"
             onClick={refetchTasks}
-            className="mt-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+            className={getAlertActionClass('error')}
           >
             Retry
           </button>
         </div>
       ) : null}
       {taskMutationError ? (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+        <div className={getAlertClass('error', isDark)}>
           {taskMutationError}
         </div>
       ) : null}
@@ -176,8 +181,8 @@ function HomePage() {
                   key={courseName}
                   className={`rounded-xl border p-4 ${
                     isDark
-                      ? 'border-slate-700 bg-slate-900 text-white'
-                      : 'border-slate-200 bg-slate-50 text-slate-900'
+                      ? 'border-[#5a463b] bg-[#1f1612]/80 text-[#f6ede6]'
+                      : 'border-[#d9c7b8] bg-[#fffaf4]/85 text-[#453434]'
                   }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -192,7 +197,11 @@ function HomePage() {
                             event.target.value,
                           )
                         }
-                        className="rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900"
+                        className={`rounded-md border px-2 py-1 text-sm ${
+                          isDark
+                            ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6]'
+                            : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434]'
+                        }`}
                       >
                         <option value="all">All statuses</option>
                         {TASK_STATUS_OPTIONS.map((option) => (
@@ -210,7 +219,11 @@ function HomePage() {
                             event.target.value,
                           )
                         }
-                        className="rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900"
+                        className={`rounded-md border px-2 py-1 text-sm ${
+                          isDark
+                            ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6]'
+                            : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434]'
+                        }`}
                       >
                         <option value="dueDate">Sort by date/time</option>
                         <option value="status">Sort by status</option>
@@ -221,7 +234,7 @@ function HomePage() {
                   {visibleTasks.length === 0 ? (
                     <p
                       className={`mt-3 text-sm ${
-                        isDark ? 'text-slate-300' : 'text-slate-600'
+                        isDark ? 'text-[#e6d8cb]' : 'text-[#6b5447]'
                       }`}
                     >
                       No tasks match this filter.
@@ -234,6 +247,7 @@ function HomePage() {
                           task={task}
                           onDelete={handleDeleteTask}
                           onUpdate={handleUpdateTask}
+                          isDark={isDark}
                         />
                       ))}
                     </div>

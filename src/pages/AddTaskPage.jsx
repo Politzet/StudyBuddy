@@ -5,6 +5,7 @@ import useLocalStorage from '../hooks/useLocalStorage'
 import useFetch from '../hooks/useFetch'
 import { setLastTaskAdded } from '../store/userSlice'
 import { API_BASE_URL } from '../config/api'
+import { getAlertClass } from '../styles/alertStyles'
 
 const initialForm = {
   taskName: '',
@@ -199,37 +200,41 @@ function AddTaskPage() {
 
   return (
     <section
-      className={`rounded-xl p-6 ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'}`}
+      className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm ${
+        isDark
+          ? 'border-[#5a463b] bg-[#2d221d]/85 text-[#f6ede6]'
+          : 'border-[#d9c7b8] bg-[#fff8f1]/88 text-[#453434]'
+      }`}
     >
       <h2 className="text-2xl font-bold">Add New Task</h2>
-      <p className={`mt-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+      <p className={`mt-2 ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
         Fill in the details to add your next study task.
       </p>
-      <p className={`mt-2 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+      <p className={`mt-2 text-sm ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
         {isLoggedIn
           ? `Last task added: ${lastTaskAdded || 'No task added yet'}`
           : 'Log in to track the last task you added.'}
       </p>
       {submitError ? (
-        <p className="mt-2 text-sm text-red-600">{submitError}</p>
+        <div className={getAlertClass('error', isDark)}>{submitError}</div>
       ) : null}
       {submitSuccess ? (
-        <p className="mt-2 text-sm text-emerald-600">{submitSuccess}</p>
+        <div className={getAlertClass('success', isDark)}>{submitSuccess}</div>
       ) : null}
 
       <div
         className={`mt-6 max-w-xl rounded-xl border p-4 ${
           isDark
-            ? 'border-slate-700 bg-slate-900 text-white'
-            : 'border-slate-200 bg-slate-50 text-slate-900'
+            ? 'border-[#5a463b] bg-[#1f1612]/80 text-[#f6ede6]'
+            : 'border-[#d9c7b8] bg-[#fffaf4]/85 text-[#453434]'
         }`}
       >
         <h3 className="text-lg font-semibold">ניהול קורסים</h3>
         {courseActionError ? (
-          <p className="mt-2 text-sm text-red-600">{courseActionError}</p>
+          <div className={getAlertClass('error', isDark)}>{courseActionError}</div>
         ) : null}
         {coursesError ? (
-          <p className="mt-2 text-sm text-red-600">{coursesError}</p>
+          <div className={getAlertClass('error', isDark)}>{coursesError}</div>
         ) : null}
         <form onSubmit={handleAddCourse} className="mt-3 flex gap-2">
           <input
@@ -237,15 +242,15 @@ function AddTaskPage() {
             value={courseNameInput}
             onChange={(event) => setCourseNameInput(event.target.value)}
             placeholder="שם קורס חדש"
-            className={`w-full rounded-md border px-3 py-2 focus:border-blue-500 focus:outline-none ${
+            className={`w-full rounded-md border px-3 py-2 focus:outline-none ${
               isDark
-                ? 'border-slate-600 bg-slate-800 text-white'
-                : 'border-slate-300 bg-white text-slate-900'
+                ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6] focus:border-[#8b6b57]'
+                : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434] focus:border-[#8b6b57]'
             }`}
           />
           <button
             type="submit"
-            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+            className="rounded-md bg-[#8b6b57] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#785845]"
           >
             הוסף
           </button>
@@ -258,7 +263,9 @@ function AddTaskPage() {
               <li
                 key={course._id}
                 className={`rounded-md border px-3 py-2 ${
-                  isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
+                  isDark
+                    ? 'border-[#5f4a3f] bg-[#2f241f]/90'
+                    : 'border-[#d9c7b8] bg-[#fffaf4]/95'
                 }`}
               >
                 {editingCourseId === course._id ? (
@@ -267,12 +274,16 @@ function AddTaskPage() {
                       type="text"
                       value={editingCourseName}
                       onChange={(event) => setEditingCourseName(event.target.value)}
-                      className="flex-1 rounded-md border border-slate-300 px-2 py-1 text-slate-900"
+                      className={`flex-1 rounded-md border px-2 py-1 ${
+                        isDark
+                          ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6]'
+                          : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434]'
+                      }`}
                     />
                     <button
                       type="button"
                       onClick={handleUpdateCourse}
-                      className="rounded-md bg-blue-600 px-2 py-1 text-xs font-medium text-white"
+                      className="rounded-md bg-[#8b6b57] px-2 py-1 text-xs font-medium text-white"
                     >
                       שמור
                     </button>
@@ -282,7 +293,7 @@ function AddTaskPage() {
                         setEditingCourseId('')
                         setEditingCourseName('')
                       }}
-                      className="rounded-md bg-slate-500 px-2 py-1 text-xs font-medium text-white"
+                      className="rounded-md bg-[#6f5b50] px-2 py-1 text-xs font-medium text-white"
                     >
                       בטל
                     </button>
@@ -294,14 +305,14 @@ function AddTaskPage() {
                       <button
                         type="button"
                         onClick={() => startEditCourse(course)}
-                        className="rounded-md bg-amber-500 px-2 py-1 text-xs font-medium text-white"
+                        className="rounded-md bg-[#b38763] px-2 py-1 text-xs font-medium text-white"
                       >
                         ערוך
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteCourse(course._id)}
-                        className="rounded-md bg-rose-600 px-2 py-1 text-xs font-medium text-white"
+                        className="rounded-md bg-[#6f3f3f] px-2 py-1 text-xs font-medium text-white"
                       >
                         מחק
                       </button>
@@ -318,8 +329,8 @@ function AddTaskPage() {
         onSubmit={handleSubmit}
         className={`mt-6 max-w-xl rounded-xl border p-6 shadow-sm ${
           isDark
-            ? 'border-slate-700 bg-slate-900 text-white'
-            : 'border-slate-200 bg-white text-slate-900'
+            ? 'border-[#5a463b] bg-[#1f1612]/80 text-[#f6ede6]'
+            : 'border-[#d9c7b8] bg-[#fffaf4]/95 text-[#453434]'
         }`}
       >
         <div>
@@ -332,10 +343,10 @@ function AddTaskPage() {
             type="text"
             value={formData.taskName}
             onChange={handleChange}
-            className={`w-full rounded-md border px-3 py-2 focus:border-blue-500 focus:outline-none ${
+            className={`w-full rounded-md border px-3 py-2 focus:outline-none ${
               isDark
-                ? 'border-slate-600 bg-slate-800 text-white'
-                : 'border-slate-300 bg-white text-slate-900'
+                ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6] focus:border-[#8b6b57]'
+                : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434] focus:border-[#8b6b57]'
             }`}
             placeholder="לדוגמה: סיכום פרק 3"
           />
@@ -353,10 +364,10 @@ function AddTaskPage() {
             name="course"
             value={formData.course}
             onChange={handleChange}
-            className={`w-full rounded-md border px-3 py-2 focus:border-blue-500 focus:outline-none ${
+            className={`w-full rounded-md border px-3 py-2 focus:outline-none ${
               isDark
-                ? 'border-slate-600 bg-slate-800 text-white'
-                : 'border-slate-300 bg-white text-slate-900'
+                ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6] focus:border-[#8b6b57]'
+                : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434] focus:border-[#8b6b57]'
             }`}
           >
             <option value="">Please select</option>
@@ -383,10 +394,10 @@ function AddTaskPage() {
             max="5"
             value={formData.difficulty}
             onChange={handleChange}
-            className={`w-full rounded-md border px-3 py-2 focus:border-blue-500 focus:outline-none ${
+            className={`w-full rounded-md border px-3 py-2 focus:outline-none ${
               isDark
-                ? 'border-slate-600 bg-slate-800 text-white'
-                : 'border-slate-300 bg-white text-slate-900'
+                ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6] focus:border-[#8b6b57]'
+                : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434] focus:border-[#8b6b57]'
             }`}
           />
           {errors.difficulty ? (
@@ -404,10 +415,10 @@ function AddTaskPage() {
             type="datetime-local"
             value={formData.dueDate || ''}
             onChange={handleChange}
-            className={`w-full rounded-md border px-3 py-2 focus:border-blue-500 focus:outline-none ${
+            className={`w-full rounded-md border px-3 py-2 focus:outline-none ${
               isDark
-                ? 'border-slate-600 bg-slate-800 text-white'
-                : 'border-slate-300 bg-white text-slate-900'
+                ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6] focus:border-[#8b6b57]'
+                : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434] focus:border-[#8b6b57]'
             }`}
           />
           {errors.dueDate ? (
@@ -418,7 +429,7 @@ function AddTaskPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="mt-6 rounded-md bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700"
+          className="mt-6 rounded-md bg-[#8b6b57] px-4 py-2 font-medium text-white transition hover:bg-[#785845]"
         >
           {isSubmitting ? 'Saving...' : 'Submit'}
         </button>

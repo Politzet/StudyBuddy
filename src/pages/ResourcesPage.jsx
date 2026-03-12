@@ -3,6 +3,7 @@ import useFetch from '../hooks/useFetch'
 import ResourceCard from '../components/ResourceCard'
 import { API_BASE_URL } from '../config/api'
 import { useTheme } from '../context/ThemeContext'
+import { getAlertActionClass, getAlertClass } from '../styles/alertStyles'
 
 const truncateTitle = (title = '', maxLength = 80) =>
   title.length > maxLength ? `${title.slice(0, maxLength)}...` : title
@@ -38,10 +39,14 @@ function ResourcesPage() {
 
   return (
     <section
-      className={`rounded-xl p-6 ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'}`}
+      className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm ${
+        isDark
+          ? 'border-[#5a463b] bg-[#2d221d]/85 text-[#f6ede6]'
+          : 'border-[#d9c7b8] bg-[#fff8f1]/88 text-[#453434]'
+      }`}
     >
       <h2 className="text-2xl font-bold">Resources</h2>
-      <p className={`mt-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+      <p className={`mt-2 ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
         Real blog resources matched to your current course tasks.
       </p>
 
@@ -49,28 +54,22 @@ function ResourcesPage() {
         <div
           className={`mt-8 flex items-center justify-center gap-3 rounded-lg border px-4 py-6 ${
             isDark
-              ? 'border-blue-800 bg-blue-950 text-blue-200'
-              : 'border-blue-200 bg-blue-50 text-blue-700'
+              ? 'border-[#8b6b57] bg-[#3a2b24]/80 text-[#f6ede6]'
+              : 'border-[#d9c7b8] bg-[#fff1e4] text-[#6b5447]'
           }`}
         >
-          <span className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#8b6b57] border-t-transparent" />
           <span className="font-medium">Loading resources...</span>
         </div>
       ) : null}
 
       {error ? (
-        <div
-          className={`mt-6 rounded-lg border px-4 py-4 ${
-            isDark
-              ? 'border-red-900 bg-red-950 text-red-200'
-              : 'border-red-200 bg-red-50 text-red-700'
-          }`}
-        >
+        <div className={getAlertClass('error', isDark)}>
           <p className="font-medium">Error: {error}</p>
           <button
             type="button"
             onClick={handleRefresh}
-            className="mt-3 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+            className={getAlertActionClass('error')}
           >
             Try Again
           </button>
@@ -80,11 +79,11 @@ function ResourcesPage() {
       <button
         type="button"
         onClick={handleRefresh}
-        className="mt-4 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700"
+        className="mt-4 rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#785845]"
       >
         Refresh Resources
       </button>
-      <p className={`mt-2 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+      <p className={`mt-2 text-xs ${isDark ? 'text-[#d7c3b4]' : 'text-[#7c6558]'}`}>
         Last refresh: {lastRefresh}
       </p>
 
