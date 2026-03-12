@@ -13,6 +13,11 @@ function ResourceCard({ article }) {
         className="h-40 w-full object-cover"
       />
       <div className="p-4">
+        {article.sourceCourse ? (
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-600">
+            Related to: {article.sourceCourse}
+          </p>
+        ) : null}
         <h3 className="text-base font-semibold text-slate-900">
           Study Resource: {article.title}
         </h3>

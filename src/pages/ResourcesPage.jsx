@@ -1,79 +1,53 @@
 import { useMemo, useState } from 'react'
 import useFetch from '../hooks/useFetch'
 import ResourceCard from '../components/ResourceCard'
-import mockNewsResponse from '../data/mockNewsResponse'
+import { API_BASE_URL } from '../config/api'
 
 const truncateTitle = (title = '', maxLength = 80) =>
   title.length > maxLength ? `${title.slice(0, maxLength)}...` : title
 
 function ResourcesPage() {
-  const [mockOffset, setMockOffset] = useState(0)
+  const [refreshKey, setRefreshKey] = useState(0)
   const [lastRefresh, setLastRefresh] = useState(() =>
     new Date().toLocaleTimeString(),
   )
-  const apiKey = import.meta.env.VITE_NEWS_API_KEY
-  const newsUrl = `https://newsapi.org/v2/everything?q=software+engineering+learning&apiKey=${
-    apiKey || 'YOUR_FREE_API_KEY'
-  }`
 
   const {
-    data,
+    data: resourcesData,
     loading,
     error,
     refetch,
-  } = useFetch(newsUrl)
-  const useMockData = !apiKey
+  } = useFetch(`${API_BASE_URL}/api/resources/blogs?refresh=${refreshKey}`)
 
   const articles = useMemo(() => {
-    if (useMockData) {
-      const mockArticles = mockNewsResponse.articles
-      if (mockArticles.length === 0) {
-        return []
-      }
-
-      // Rotate list on refresh in demo mode so users see visible change.
-      const offset = mockOffset % mockArticles.length
-      return [...mockArticles.slice(offset), ...mockArticles.slice(0, offset)].map(
-        (article) => ({
-          ...article,
-          title: truncateTitle(article.title),
-        }),
-      )
-    }
-
-    return (data?.articles || []).map((article) => ({
+    const source = Array.isArray(resourcesData) ? resourcesData : []
+    return source.map((article) => ({
       ...article,
       title: truncateTitle(article.title),
     }))
-  }, [data, mockOffset, useMockData])
+  }, [resourcesData])
 
   const handleRefresh = () => {
     setLastRefresh(new Date().toLocaleTimeString())
-    if (useMockData) {
-      setMockOffset((prev) => prev + 1)
-      return
-    }
     refetch()
+    setRefreshKey((prev) => prev + 1)
   }
 
   return (
     <section>
-      <h2 className="text-2xl font-bold">Study Resources (API)</h2>
-      <p className="mt-2 text-slate-600">Helpful study resources for your day.</p>
-      {useMockData ? (
-        <p className="mt-1 text-sm text-amber-700">
-          Demo mode: add `VITE_NEWS_API_KEY` in your environment for live news.
-        </p>
-      ) : null}
+      <h2 className="text-2xl font-bold">Resources</h2>
+      <p className="mt-2 text-slate-600">
+        Real blog resources matched to your current course tasks.
+      </p>
 
-      {loading && !useMockData ? (
+      {loading ? (
         <div className="mt-8 flex items-center justify-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-6 text-blue-700">
           <span className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
           <span className="font-medium">Loading resources...</span>
         </div>
       ) : null}
 
-      {error && !useMockData ? (
+      {error ? (
         <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-4 text-red-700">
           <p className="font-medium">Error: {error}</p>
           <button
@@ -95,7 +69,7 @@ function ResourcesPage() {
       </button>
       <p className="mt-2 text-xs text-slate-500">Last refresh: {lastRefresh}</p>
 
-      {(useMockData || (!loading && !error)) ? (
+      {!loading && !error ? (
         <ul className="mt-6 grid gap-4 sm:grid-cols-2">
           {articles.map((article, index) => (
             <li key={`${article.url}-${index}`}>

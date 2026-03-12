@@ -49,7 +49,10 @@ function Navbar() {
               Add Task
             </NavLink>
             <NavLink to="/api" className={navClassName}>
-              API Resources
+              Resources
+            </NavLink>
+            <NavLink to="/moodle-sync" className={navClassName}>
+              Moodle Sync
             </NavLink>
             <button
               type="button"

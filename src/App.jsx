@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage'
 import AddTaskPage from './pages/AddTaskPage'
 import ResourcesPage from './pages/ResourcesPage'
 import NotFoundPage from './pages/NotFoundPage'
+import MoodleSync from './pages/MoodleSync'
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/form" element={<AddTaskPage />} />
           <Route path="/api" element={<ResourcesPage />} />
+          <Route path="/moodle-sync" element={<MoodleSync />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

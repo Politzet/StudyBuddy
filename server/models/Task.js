@@ -22,6 +22,11 @@ const taskSchema = new mongoose.Schema({
     type: Date,
     required: [true, 'Due date is required'],
   },
+  status: {
+    type: String,
+    enum: ['not_started', 'in_progress', 'done'],
+    default: 'not_started',
+  },
   createdAt: {
     type: Date,
     default: Date.now,
