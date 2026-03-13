@@ -5,6 +5,10 @@ import Navbar from './components/Navbar'
 import LogonPage from './pages/LogonPage'
 import RegisterPage from './pages/RegisterPage'
 import HomePage from './pages/HomePage'
+import TasksPage from './pages/TasksPage'
+import ExamsPage from './pages/ExamsPage'
+import ProjectsPage from './pages/ProjectsPage'
+import OtherPage from './pages/OtherPage'
 import AddTaskPage from './pages/AddTaskPage'
 import ResourcesPage from './pages/ResourcesPage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -72,6 +76,39 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AddTaskPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tasks"
+              element={
+                <ProtectedRoute>
+                  <TasksPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/exams"
+              element={
+                <ProtectedRoute>
+                  <ExamsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/tests" element={<Navigate to="/exams" replace />} />
+            <Route
+              path="/projects"
+              element={
+                <ProtectedRoute>
+                  <ProjectsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/other"
+              element={
+                <ProtectedRoute>
+                  <OtherPage />
                 </ProtectedRoute>
               }
             />

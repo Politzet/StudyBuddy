@@ -1,6 +1,11 @@
 import mongoose from 'mongoose'
 
 const taskSchema = new mongoose.Schema({
+  userId: {
+    type: String,
+    trim: true,
+    default: '',
+  },
   title: {
     type: String,
     required: [true, 'Title is required'],
@@ -26,6 +31,11 @@ const taskSchema = new mongoose.Schema({
     type: String,
     enum: ['not_started', 'in_progress', 'done'],
     default: 'not_started',
+  },
+  category: {
+    type: String,
+    enum: ['tasks', 'tests', 'projects', 'other'],
+    default: 'tasks',
   },
   createdAt: {
     type: Date,

@@ -7,6 +7,13 @@ function useFetch(url) {
   const [requestCount, setRequestCount] = useState(0)
 
   useEffect(() => {
+    if (!url) {
+      setData(null)
+      setError('')
+      setLoading(false)
+      return undefined
+    }
+
     let isCancelled = false
     const controller = new AbortController()
 
@@ -18,7 +25,12 @@ function useFetch(url) {
         const response = await fetch(url, { signal: controller.signal })
 
         if (!response.ok) {
-          throw new Error('Failed to fetch data from API')
+          const errorBody = await response.json().catch(() => ({}))
+          const errorMessage =
+            errorBody?.error?.message ||
+            errorBody?.message ||
+            'Failed to fetch data from API'
+          throw new Error(errorMessage)
         }
 
         const json = await response.json()

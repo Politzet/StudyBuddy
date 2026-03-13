@@ -36,9 +36,6 @@ function Navbar() {
           <NavLink to="/home" className={navClassName(isDark)}>
             Home
           </NavLink>
-          <NavLink to="/form" className={navClassName(isDark)}>
-            Add Task
-          </NavLink>
           <NavLink to="/api" className={navClassName(isDark)}>
             Resources
           </NavLink>

@@ -6,12 +6,18 @@ import bcrypt from 'bcrypt'
 import Task from './models/Task.js'
 import Course from './models/Course.js'
 import User from './models/User.js'
+import Category from './models/Category.js'
+import Exam from './models/Exam.js'
+import Project from './models/Project.js'
+import OtherItem from './models/OtherItem.js'
+import FavoriteVideo from './models/FavoriteVideo.js'
 
 dotenv.config()
 
 const app = express()
 const port = Number(process.env.PORT) || 5000
 const PASSWORD_SALT_ROUNDS = 10
+const DEFAULT_CATEGORY_NAMES = ['Tasks', 'Tests', 'Projects', 'Other']
 
 app.use(
   cors({
@@ -143,6 +149,8 @@ const shuffleArray = (items) => {
   return copy
 }
 
+const parseUserId = (req) => String(req.query.userId || req.body.userId || '').trim()
+
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
@@ -206,34 +214,319 @@ app.post('/api/auth/login', async (req, res) => {
 })
 
 app.get('/api/moodle/sync', (_req, res) => {
-  const moodleAssignments = [
-    {
-      moodleId: 'mdl-101',
-      courseName: 'Web Services',
-      title: 'HW3 - Redux',
-      dueDate: '2026-03-20T20:00:00.000Z',
-    },
-    {
-      moodleId: 'mdl-102',
-      courseName: 'Algorithms',
-      title: 'Graph Traversal Practice',
-      dueDate: '2026-03-22T18:30:00.000Z',
-    },
-    {
-      moodleId: 'mdl-103',
-      courseName: 'Introduction to Programming',
-      title: 'Async JavaScript Exercises',
-      dueDate: '2026-03-25T16:00:00.000Z',
-    },
-    {
-      moodleId: 'mdl-104',
-      courseName: 'Computer Networks',
-      title: 'HTTP and REST Quiz Prep',
-      dueDate: '2026-03-27T12:00:00.000Z',
-    },
-  ]
+  const moodleCourseAssignments = {
+    'Programming ReactJS': [
+      'React Homework #1 - Build 3 Pages from Your Site',
+      'React Homework #2 - Router & Context',
+      'React Homework #3 - Custom Hooks + Redux Toolkit',
+      'Final Project - React Course',
+    ],
+    'Computer Architecture': [
+      'HW1: Stored Program and the CPU',
+      'HW2: Machine Instructions, Instruction Cycle, and Control Unit',
+      'HW3: CPU Structure, ISA 32/64 bit, CISC vs RISC Philosophies',
+      'HW4: Pipeline, Latency, and Throughput',
+      'HW5: Cache Memory Hierarchy',
+    ],
+    'Software Quality Engineering': [
+      'Introduction to Software Testing',
+      'Test Types and Techniques',
+      'STP, STD, and STR Documentation',
+      'Risk Management in QA',
+      'Inspections and Verification Processes',
+      'Fault Tolerance',
+      'AI in Software Testing',
+      'Software Metrics',
+      'Testing in Startups',
+      'Test Automation',
+      'Chaos Testing',
+    ],
+    Cryptography: [
+      'HW1: Greatest Common Divisor (GCD)',
+      'HW2: Systems of Equations',
+      'HW3: Modular Exponentiation',
+      'HW4: Primality Testing',
+      'HW5: Group Theory',
+      'HW6: Diffie-Hellman Key Exchange (DHKE)',
+      'HW7: Elliptic Curve Cryptography (ECC)',
+      'HW8: Solving Discrete Logarithm Problem (DLP)',
+      'HW9: RSA Algorithm',
+      'HW10: Digital Signatures',
+      'HW11: Linear-Feedback Shift Register (LFSR)',
+      'HW12: Fields and Galois Fields',
+    ],
+    'Software Engineering Methods': [
+      'Project One-Pager Submission',
+      'UML Modeling Assignment',
+      'Software Requirements Specification (SRS) Submission',
+      'Software Design Description (SDD) Submission',
+      'Module Design and Development Selection',
+      'Low-Level Design (LLD)',
+      'Final Project Submission',
+    ],
+    'Logic Design & Assembly': [
+      'HW: Transistor as a Switch',
+      'HW: Logic Gates',
+      'HW: Combinational Comparison Logic',
+      'HW: Combinational Logic to ALU',
+      'HW: Latches, Flip-Flops, and Registers',
+      'HW: Memory Structures',
+      'HW: The System Bus',
+      'HW: Microinstructions and Register Transfer Language (RTL)',
+      'HW: RTL and CPU Grammar',
+      'HW: CPU Instruction Format',
+      'HW: The Assembler',
+      'HW: CPU Control Unit',
+      'HW: Assembly Full Cycle & Microcode',
+      'HW: Interrupt Cycle and Basics',
+      'HW: CPU Re-design (TCM & MRI)',
+      'HW: Stack Operations & Adding Instructions',
+    ],
+    'Scientific Programming in Python': [
+      'Point 2D Implementation',
+      'Dataset Selection',
+      'DataSummary API Development',
+      'Dataset Preparation',
+      'Final Project: Dataset Analysis',
+    ],
+    'System Programming (Linux)': [
+      'Working in a Linux Environment',
+      'The Linux File System Structure',
+      'File Types, Ownership, and Permissions',
+      'System Calls and Error Handling',
+      'File I/O Operations: read(), write()',
+      'Processes, Threads, and Fork/Exec',
+      'Bash Program Logic',
+      'Race Conditions and Mutex Mechanisms',
+      'Sockets Programming: Iterative and Concurrent Server Models',
+    ],
+  }
 
-  res.json(moodleAssignments)
+  const tasks = Object.entries(moodleCourseAssignments).flatMap(
+    ([course, assignmentTitles], courseIndex) =>
+      assignmentTitles.map((title, assignmentIndex) => {
+        const dueDate = new Date(
+          Date.UTC(2026, 3, 1 + courseIndex * 3 + assignmentIndex, 17, 0, 0),
+        )
+        return {
+          id: `mdl-task-${courseIndex + 1}-${assignmentIndex + 1}`,
+          title,
+          course,
+          dueDate: dueDate.toISOString(),
+        }
+      }),
+  )
+
+  res.json({
+    tasks,
+    exams: [
+      {
+        id: 'exam-sem-2026-05-15',
+        course: 'Software Engineering Methods',
+        date: '2026-05-15',
+        time: '14:00-17:00',
+        location: { building: 'Pernick', room: '247' },
+      },
+      {
+        id: 'exam-logic-2026-05-22',
+        course: 'Logic Design (Assembly)',
+        date: '2026-05-22',
+        time: '14:00-17:00',
+        location: { building: 'Pernick', room: '247' },
+      },
+      {
+        id: 'exam-arch-2026-06-01',
+        course: 'Computer Architecture',
+        date: '2026-06-01',
+        time: '14:00-17:00',
+        location: { building: 'Pernick', room: '247' },
+      },
+      {
+        id: 'exam-sqe-2026-06-10',
+        course: 'Software Quality Engineering',
+        date: '2026-06-10',
+        time: '14:00-17:00',
+        location: { building: 'Pernick', room: '247' },
+      },
+      {
+        id: 'exam-linux-2026-06-20',
+        course: 'System Programming (Linux)',
+        date: '2026-06-20',
+        time: '14:00-17:00',
+        location: { building: 'Mitchell', room: '2103' },
+      },
+    ],
+    projects: [
+      {
+        id: 'project-reactjs-final',
+        title: 'Final Project - Full Stack StudyBuddy App',
+        course: 'Programming ReactJS',
+        deadline: '2026-07-01T23:59:00.000Z',
+        weight: 35,
+      },
+      {
+        id: 'project-sem-final',
+        title: 'Final Group Project Submission',
+        course: 'Software Engineering Methods',
+        deadline: '2026-06-15T23:59:00.000Z',
+        weight: 30,
+      },
+      {
+        id: 'project-python-final',
+        title: 'Dataset Analysis Final Project',
+        course: 'Scientific Programming (Python)',
+        deadline: '2026-05-25T23:59:00.000Z',
+        weight: 25,
+      },
+    ],
+  })
+})
+
+app.get('/api/favorite-videos', async (req, res) => {
+  try {
+    const userId = parseUserId(req)
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' })
+    }
+    const favorites = await FavoriteVideo.find({ userId }).sort({ updatedAt: -1 })
+    return res.json(favorites)
+  } catch {
+    return res.status(500).json({ message: 'Failed to fetch favorite videos' })
+  }
+})
+
+app.post('/api/favorite-videos', async (req, res) => {
+  try {
+    const userId = parseUserId(req)
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' })
+    }
+
+    const payload = {
+      userId,
+      videoId: req.body.videoId,
+      title: req.body.title,
+      channelTitle: req.body.channelTitle,
+      thumbnail: req.body.thumbnail,
+      youtubeUrl: req.body.youtubeUrl,
+      course: req.body.course,
+      assignmentName: req.body.assignmentName,
+      personalNote: req.body.personalNote || '',
+    }
+
+    const favorite = await FavoriteVideo.findOneAndUpdate(
+      { userId, videoId: payload.videoId },
+      payload,
+      { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true },
+    )
+
+    return res.status(201).json(favorite)
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res
+        .status(400)
+        .json({ message: 'Validation failed', details: formatValidationError(error) })
+    }
+    return res.status(500).json({ message: 'Failed to save favorite video' })
+  }
+})
+
+app.put('/api/favorite-videos/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid favorite video id' })
+    }
+
+    const favorite = await FavoriteVideo.findByIdAndUpdate(
+      id,
+      { personalNote: req.body.personalNote || '' },
+      { new: true, runValidators: true },
+    )
+
+    if (!favorite) {
+      return res.status(404).json({ message: 'Favorite video not found' })
+    }
+
+    return res.json(favorite)
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res
+        .status(400)
+        .json({ message: 'Validation failed', details: formatValidationError(error) })
+    }
+    return res.status(500).json({ message: 'Failed to update favorite video note' })
+  }
+})
+
+app.delete('/api/favorite-videos/:id', async (req, res) => {
+  try {
+    const userId = parseUserId(req)
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' })
+    }
+
+    const { id } = req.params
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid favorite video id' })
+    }
+
+    const deleted = await FavoriteVideo.findOneAndDelete({ _id: id, userId })
+    if (!deleted) {
+      return res.status(404).json({ message: 'Favorite video not found' })
+    }
+
+    return res.status(204).send()
+  } catch {
+    return res.status(500).json({ message: 'Failed to delete favorite video' })
+  }
+})
+
+app.get('/api/categories', async (req, res) => {
+  try {
+    const userId = parseUserId(req)
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' })
+    }
+
+    await Promise.all(
+      DEFAULT_CATEGORY_NAMES.map((name) =>
+        Category.updateOne({ userId, name }, { userId, name }, { upsert: true }),
+      ),
+    )
+
+    const categories = await Category.find({ userId }).sort({ createdAt: 1 })
+    return res.json(categories)
+  } catch {
+    return res.status(500).json({ message: 'Failed to fetch categories' })
+  }
+})
+
+app.post('/api/categories', async (req, res) => {
+  try {
+    const userId = parseUserId(req)
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' })
+    }
+
+    const category = await Category.create({
+      userId,
+      name: req.body.name,
+    })
+
+    return res.status(201).json(category)
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Category already exists' })
+    }
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        message: 'Validation failed',
+        details: formatValidationError(error),
+      })
+    }
+    return res.status(500).json({ message: 'Failed to create category' })
+  }
 })
 
 app.get('/api/resources/blogs', async (_req, res) => {
@@ -267,7 +560,25 @@ app.get('/api/resources/blogs', async (_req, res) => {
 
 app.get('/api/tasks', async (_req, res) => {
   try {
-    const tasks = await Task.find().sort({ dueDate: 1, createdAt: -1 })
+    const userId = parseUserId(_req)
+    const category = String(_req.query.category || '').trim()
+    const query = {}
+
+    if (userId) {
+      query.$and = [{ $or: [{ userId }, { userId: { $exists: false } }, { userId: '' }] }]
+    }
+    if (category === 'tasks') {
+      const categoryClause = { $or: [{ category: 'tasks' }, { category: { $exists: false } }] }
+      if (query.$and) {
+        query.$and.push(categoryClause)
+      } else {
+        Object.assign(query, categoryClause)
+      }
+    } else if (category) {
+      query.category = category
+    }
+
+    const tasks = await Task.find(query).sort({ dueDate: 1, createdAt: -1 })
     res.json(tasks)
   } catch {
     res.status(500).json({ message: 'Failed to fetch tasks' })
@@ -281,7 +592,11 @@ app.post('/api/tasks', async (req, res) => {
       return res.status(400).json({ message: 'Selected course does not exist' })
     }
 
-    const task = await Task.create(req.body)
+    const task = await Task.create({
+      ...req.body,
+      category: req.body.category || 'tasks',
+      userId: req.body.userId || '',
+    })
     res.status(201).json(task)
   } catch (error) {
     if (error.name === 'ValidationError') {
@@ -345,6 +660,225 @@ app.delete('/api/tasks/:id', async (req, res) => {
     return res.status(204).send()
   } catch {
     return res.status(500).json({ message: 'Failed to delete task' })
+  }
+})
+
+app.get('/api/exams', async (req, res) => {
+  try {
+    const userId = parseUserId(req)
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' })
+    }
+    const exams = await Exam.find({ userId }).sort({ date: 1, createdAt: -1 })
+    return res.json(exams)
+  } catch {
+    return res.status(500).json({ message: 'Failed to fetch exams' })
+  }
+})
+
+app.post('/api/exams', async (req, res) => {
+  try {
+    const userId = parseUserId(req)
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' })
+    }
+    const exam = await Exam.create({ ...req.body, userId })
+    return res.status(201).json(exam)
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res
+        .status(400)
+        .json({ message: 'Validation failed', details: formatValidationError(error) })
+    }
+    return res.status(500).json({ message: 'Failed to create exam' })
+  }
+})
+
+app.put('/api/exams/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid exam id' })
+    }
+
+    const exam = await Exam.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    })
+    if (!exam) {
+      return res.status(404).json({ message: 'Exam not found' })
+    }
+    return res.json(exam)
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res
+        .status(400)
+        .json({ message: 'Validation failed', details: formatValidationError(error) })
+    }
+    return res.status(500).json({ message: 'Failed to update exam' })
+  }
+})
+
+app.delete('/api/exams/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid exam id' })
+    }
+    const exam = await Exam.findByIdAndDelete(id)
+    if (!exam) {
+      return res.status(404).json({ message: 'Exam not found' })
+    }
+    return res.status(204).send()
+  } catch {
+    return res.status(500).json({ message: 'Failed to delete exam' })
+  }
+})
+
+app.get('/api/projects', async (req, res) => {
+  try {
+    const userId = parseUserId(req)
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' })
+    }
+    const projects = await Project.find({ userId }).sort({ deadline: 1, createdAt: -1 })
+    return res.json(projects)
+  } catch {
+    return res.status(500).json({ message: 'Failed to fetch projects' })
+  }
+})
+
+app.post('/api/projects', async (req, res) => {
+  try {
+    const userId = parseUserId(req)
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' })
+    }
+    const project = await Project.create({ ...req.body, userId })
+    return res.status(201).json(project)
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res
+        .status(400)
+        .json({ message: 'Validation failed', details: formatValidationError(error) })
+    }
+    return res.status(500).json({ message: 'Failed to create project' })
+  }
+})
+
+app.put('/api/projects/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid project id' })
+    }
+    const project = await Project.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    })
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' })
+    }
+    return res.json(project)
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res
+        .status(400)
+        .json({ message: 'Validation failed', details: formatValidationError(error) })
+    }
+    return res.status(500).json({ message: 'Failed to update project' })
+  }
+})
+
+app.delete('/api/projects/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid project id' })
+    }
+    const project = await Project.findByIdAndDelete(id)
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' })
+    }
+    return res.status(204).send()
+  } catch {
+    return res.status(500).json({ message: 'Failed to delete project' })
+  }
+})
+
+app.get('/api/others', async (req, res) => {
+  try {
+    const userId = parseUserId(req)
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' })
+    }
+    const categoryName = String(req.query.categoryName || '').trim()
+    const query = { userId }
+    if (categoryName) {
+      query.categoryName = categoryName
+    }
+    const items = await OtherItem.find(query).sort({ deadline: 1, createdAt: -1 })
+    return res.json(items)
+  } catch {
+    return res.status(500).json({ message: 'Failed to fetch other items' })
+  }
+})
+
+app.post('/api/others', async (req, res) => {
+  try {
+    const userId = parseUserId(req)
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' })
+    }
+    const item = await OtherItem.create({ ...req.body, userId })
+    return res.status(201).json(item)
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res
+        .status(400)
+        .json({ message: 'Validation failed', details: formatValidationError(error) })
+    }
+    return res.status(500).json({ message: 'Failed to create item' })
+  }
+})
+
+app.put('/api/others/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid item id' })
+    }
+    const item = await OtherItem.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    })
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' })
+    }
+    return res.json(item)
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res
+        .status(400)
+        .json({ message: 'Validation failed', details: formatValidationError(error) })
+    }
+    return res.status(500).json({ message: 'Failed to update item' })
+  }
+})
+
+app.delete('/api/others/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid item id' })
+    }
+    const item = await OtherItem.findByIdAndDelete(id)
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' })
+    }
+    return res.status(204).send()
+  } catch {
+    return res.status(500).json({ message: 'Failed to delete item' })
   }
 })
 
@@ -445,7 +979,7 @@ async function startServer() {
 
   await mongoose.connect(mongoUri)
 
-  const initialCourses = ['מבוא לתכנות', 'אלגוריתמים', 'מארג שירותי אינטרנט']
+  const initialCourses = ['מבוא לתכנות', 'אלגוריתמים', 'מארג שירותי אינטרנט', 'General']
   await Promise.all(
     initialCourses.map((courseName) =>
       Course.updateOne({ name: courseName }, { name: courseName }, { upsert: true }),

@@ -16,7 +16,7 @@ const initialForm = {
 
 function AddTaskPage() {
   const dispatch = useDispatch()
-  const { isLoggedIn, lastTaskAdded } = useSelector((state) => state.user)
+  const { user, isLoggedIn, lastTaskAdded } = useSelector((state) => state.user)
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
@@ -81,10 +81,12 @@ function AddTaskPage() {
     }
 
     const newTask = {
+      userId: user?.id || '',
       title: formData.taskName.trim(),
       course: formData.course,
       difficulty: formData.difficulty,
       dueDate: formData.dueDate,
+      category: 'tasks',
     }
 
     try {
