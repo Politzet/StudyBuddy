@@ -3,6 +3,7 @@ import {
   getTaskStatusLabel,
   TASK_STATUS_OPTIONS,
 } from '../constants/taskStatus'
+import CustomDropdown from './CustomDropdown'
 
 function TaskCard({
   task,
@@ -39,10 +40,8 @@ function TaskCard({
 
   return (
     <article
-      className={`rounded-xl border p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg ${
-        isDark
-          ? 'border-[#5f4a3f] bg-[#2f241f]/90 text-[#f6ede6]'
-          : 'border-[#d9c7b8] bg-[#fffaf4]/95 text-[#453434]'
+      className={`academy-card p-5 ${
+        isDark ? 'academy-card-dark border-[#d1bfa7] text-[#f1e4cc]' : 'academy-card-light border-[#d1bfa7] text-[#2a3748]'
       }`}
     >
       <h3 className={`text-lg font-semibold ${isDark ? 'text-[#fff4ea]' : 'text-[#453434]'}`}>
@@ -88,35 +87,31 @@ function TaskCard({
             >
               סטטוס
             </label>
-            <select
-              name="status"
+            <CustomDropdown
               value={editForm.status}
-              onChange={handleEditChange}
-              className={`w-full rounded-md border px-3 py-2 text-sm ${
-                isDark
-                  ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6]'
-                  : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434]'
-              }`}
-            >
-              {TASK_STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              onChange={(nextStatus) =>
+                setEditForm((prev) => ({ ...prev, status: nextStatus }))
+              }
+              isDark={isDark}
+              className="w-full"
+              options={TASK_STATUS_OPTIONS.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+            />
           </div>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={handleSave}
-              className="rounded-md bg-[#8b6b57] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#785845]"
+              className="rounded-md bg-[#8b6b57] px-3 py-2 text-sm font-medium text-[#f1e4cc] transition hover:bg-[#785845]"
             >
               Save
             </button>
             <button
               type="button"
               onClick={() => setIsEditing(false)}
-              className="rounded-md bg-[#6f5b50] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#5d4c43]"
+              className="rounded-md bg-[#6f5b50] px-3 py-2 text-sm font-medium text-[#f1e4cc] transition hover:bg-[#5d4c43]"
             >
               Cancel
             </button>
@@ -127,14 +122,14 @@ function TaskCard({
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="rounded-md bg-[#b38763] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#9a7354]"
+            className="rounded-md bg-[#b38763] px-3 py-2 text-sm font-medium text-[#f1e4cc] transition hover:bg-[#9a7354]"
           >
             Edit
           </button>
           <button
             type="button"
             onClick={() => onDelete(task._id || task.id)}
-            className="rounded-md bg-[#6f3f3f] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#5d3434]"
+            className="rounded-md bg-[#6f3f3f] px-3 py-2 text-sm font-medium text-[#f1e4cc] transition hover:bg-[#5d3434]"
           >
             Delete
           </button>

@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { API_BASE_URL } from '../config/api'
-import { login } from '../store/userSlice'
+import MagicLoader from '../components/MagicLoader'
+import { login, setAuthLoading } from '../store/userSlice'
 import { getAlertClass } from '../styles/alertStyles'
 
 const bgCandidates = [
@@ -22,13 +23,16 @@ const logoCandidates = [
 function LogonPage() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
+  const auth = useSelector((state) => state.user.auth)
   const [bgIndex, setBgIndex] = useState(0)
   const [logoIndex, setLogoIndex] = useState(0)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [emailError, setEmailError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccessBurst, setShowSuccessBurst] = useState(false)
+  const [fadeFormAway, setFadeFormAway] = useState(false)
+  const successPendingRef = useRef(false)
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   const handleBgError = () => {
@@ -38,6 +42,22 @@ function LogonPage() {
   const handleLogoError = () => {
     setLogoIndex((prev) => Math.min(prev + 1, logoCandidates.length - 1))
   }
+
+  useEffect(() => {
+    if (!successPendingRef.current || !auth.isAuthenticated || auth.isLoading) {
+      return
+    }
+    setShowSuccessBurst(true)
+    setFadeFormAway(true)
+
+    const navigateTimer = setTimeout(() => {
+      successPendingRef.current = false
+      setShowSuccessBurst(false)
+      navigate('/home')
+    }, 1050)
+
+    return () => clearTimeout(navigateTimer)
+  }, [auth.isAuthenticated, auth.isLoading, navigate])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -51,7 +71,7 @@ function LogonPage() {
     }
 
     try {
-      setIsSubmitting(true)
+      dispatch(setAuthLoading(true))
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -64,6 +84,7 @@ function LogonPage() {
       }
 
       const userData = await response.json()
+      successPendingRef.current = true
       dispatch(
         login({
           name: userData.userName,
@@ -71,11 +92,11 @@ function LogonPage() {
           id: userData._id,
         }),
       )
-      navigate('/home')
     } catch (loginError) {
+      successPendingRef.current = false
       setError(loginError.message)
     } finally {
-      setIsSubmitting(false)
+      dispatch(setAuthLoading(false))
     }
   }
 
@@ -88,9 +109,16 @@ function LogonPage() {
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div className="absolute inset-0 bg-white/55" />
+      {(auth.isLoading || showSuccessBurst) ? (
+        <div className="absolute inset-0 bg-[#1e1a17]/45 backdrop-saturate-50" />
+      ) : null}
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-lg rounded-2xl bg-white/45 p-8 backdrop-blur-sm">
+        <div
+          className={`w-full max-w-lg rounded-2xl bg-white/45 p-8 backdrop-blur-sm transition-opacity duration-500 ${
+            fadeFormAway ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
           <div className="mb-8 flex justify-center">
             <img
               src={logoCandidates[logoIndex]}
@@ -147,10 +175,10 @@ function LogonPage() {
             <div className="pt-2 text-center">
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={auth.isLoading}
                 className="inline-flex rounded-full bg-[#8b6b57] px-8 py-2 font-semibold text-white transition hover:bg-[#785845] disabled:opacity-70"
               >
-                {isSubmitting ? 'Logging in...' : 'Logon'}
+                {auth.isLoading ? 'Logging in...' : 'Logon'}
               </button>
             </div>
           </form>
@@ -163,6 +191,12 @@ function LogonPage() {
           </p>
         </div>
       </div>
+
+      {auth.isLoading || showSuccessBurst ? (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+          <MagicLoader burst={showSuccessBurst} />
+        </div>
+      ) : null}
     </section>
   )
 }

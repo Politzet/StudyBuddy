@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import Breadcrumbs from '../components/Breadcrumbs'
+import CreationSparkle from '../components/CreationSparkle'
+import CustomDropdown from '../components/CustomDropdown'
 import FormCard from '../components/FormCard'
 import { useTheme } from '../context/ThemeContext'
 import useFetch from '../hooks/useFetch'
 import { API_BASE_URL } from '../config/api'
-import { setSelectedCategory } from '../store/dashboardSlice'
+import { markItemCreated, setSelectedCategory } from '../store/dashboardSlice'
 import { getAlertClass } from '../styles/alertStyles'
 import { getFormInputClass } from '../styles/formStyles'
 
@@ -19,6 +21,7 @@ const initialForm = {
 function ProjectsPage() {
   const dispatch = useDispatch()
   const { user } = useSelector((state) => state.user)
+  const lastCreatedItem = useSelector((state) => state.dashboard.lastCreatedItem)
   const userId = user?.id || ''
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -28,6 +31,9 @@ function ProjectsPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
   const [moodleProgressMap, setMoodleProgressMap] = useState({})
+  const [dbProgressMap, setDbProgressMap] = useState({})
+  const [courseFilter, setCourseFilter] = useState('all')
+  const [sparkleProjectId, setSparkleProjectId] = useState('')
 
   useEffect(() => {
     dispatch(setSelectedCategory('projects'))
@@ -64,6 +70,39 @@ function ProjectsPage() {
       }))
     return [...imported, ...mocked]
   }, [projects, moodleProjects, moodleProgressMap])
+  const courses = useMemo(
+    () => Array.from(new Set(allProjects.map((project) => project.course).filter(Boolean))).sort(),
+    [allProjects],
+  )
+  const normalizedCourseFilter =
+    courseFilter === 'all' || courses.includes(courseFilter) ? courseFilter : 'all'
+  const visibleProjects = useMemo(
+    () =>
+      normalizedCourseFilter === 'all'
+        ? allProjects
+        : allProjects.filter((project) => project.course === normalizedCourseFilter),
+    [allProjects, normalizedCourseFilter],
+  )
+  const groupedProjects = useMemo(() => {
+    return visibleProjects.reduce((acc, project) => {
+      const courseName = project.course || 'Unassigned Course'
+      if (!acc[courseName]) {
+        acc[courseName] = []
+      }
+      acc[courseName].push(project)
+      return acc
+    }, {})
+  }, [visibleProjects])
+  const groupedCourses = useMemo(() => Object.keys(groupedProjects).sort(), [groupedProjects])
+
+  useEffect(() => {
+    if (!lastCreatedItem || lastCreatedItem.category !== 'projects' || !lastCreatedItem.id) {
+      return
+    }
+    setSparkleProjectId(String(lastCreatedItem.id))
+    const timer = setTimeout(() => setSparkleProjectId(''), 1000)
+    return () => clearTimeout(timer)
+  }, [lastCreatedItem])
 
   const triggerRefresh = () => {
     refetch()
@@ -92,6 +131,20 @@ function ProjectsPage() {
       if (!response.ok) {
         const body = await response.json().catch(() => ({}))
         throw new Error(body.message || 'Failed to save project')
+      }
+
+      const savedProject = await response.json().catch(() => null)
+      if (!editingId) {
+        const createdProjectId = savedProject?._id || savedProject?.id
+        if (createdProjectId) {
+          dispatch(
+            markItemCreated({
+              category: 'projects',
+              id: String(createdProjectId),
+              createdAt: Date.now(),
+            }),
+          )
+        }
       }
 
       setFormData(initialForm)
@@ -135,31 +188,56 @@ function ProjectsPage() {
       return
     }
 
+    setDbProgressMap((prev) => ({ ...prev, [project.id]: nextProgress }))
     try {
       const response = await fetch(`${API_BASE_URL}/api/projects/${project._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ progress: nextProgress }),
+        body: JSON.stringify({
+          title: project.title,
+          course: project.course,
+          deadline: project.deadline,
+          progress: nextProgress,
+          userId,
+        }),
       })
       if (!response.ok) {
-        throw new Error('Failed to update project progress')
+        const body = await response.json().catch(() => ({}))
+        throw new Error(body.message || 'Failed to update project progress')
       }
-      triggerRefresh()
     } catch (progressError) {
+      setDbProgressMap((prev) => {
+        const next = { ...prev }
+        delete next[project.id]
+        return next
+      })
       setErrorMessage(progressError.message)
     }
   }
 
   return (
     <section
-      className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm ${
+      className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm transition-colors duration-300 ${
         isDark
-          ? 'border-[#5a463b] bg-[#2d221d]/85 text-[#f6ede6]'
-          : 'border-[#d9c7b8] bg-[#fff8f1]/88 text-[#453434]'
+          ? 'academy-page-dark border-[#7d654f]'
+          : 'academy-page-light border-[#d1bfa7]'
       }`}
     >
       <Breadcrumbs isDark={isDark} />
       <h2 className="text-2xl font-bold">Projects</h2>
+      <div className="mt-3 flex items-center gap-3">
+        <label className="text-xs font-medium">Filter by course:</label>
+        <CustomDropdown
+          value={normalizedCourseFilter}
+          onChange={setCourseFilter}
+          isDark={isDark}
+          className="min-w-[180px]"
+          options={[
+            { value: 'all', label: 'All courses' },
+            ...courses.map((course) => ({ value: course, label: course })),
+          ]}
+        />
+      </div>
 
       {error ? <div className={getAlertClass('error', isDark)}>{error}</div> : null}
       {errorMessage ? <div className={getAlertClass('error', isDark)}>{errorMessage}</div> : null}
@@ -234,57 +312,79 @@ function ProjectsPage() {
         </p>
       ) : null}
 
-      <ul className="mt-6 space-y-3">
-        {allProjects.map((project) => (
-          <li
-            key={project.id}
-            className={`rounded-xl border p-4 ${
-              isDark ? 'border-[#5a463b] bg-[#1f1612]/80' : 'border-[#d9c7b8] bg-[#fffaf4]/85'
-            }`}
+      <div className="mt-6 space-y-4">
+        {groupedCourses.map((courseName) => (
+          <div
+            key={courseName}
+            className={`academy-card p-4 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
           >
-            <h3 className="font-semibold">{project.title}</h3>
-            <p className="text-sm">Course: {project.course}</p>
-            <p className="text-sm">Deadline: {new Date(project.deadline).toLocaleString()}</p>
-            <div className="mt-2 h-2.5 w-full rounded-full bg-[#d2c0b1]">
-              <div
-                className="h-2.5 rounded-full bg-[#8b6b57]"
-                style={{ width: `${Math.max(0, Math.min(100, project.progress || 0))}%` }}
-              />
-            </div>
-            <p className="mt-1 text-xs">Progress: {project.progress || 0}%</p>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={project.progress || 0}
-              onChange={(event) => handleProgressChange(project, Number(event.target.value))}
-              className="mt-2 w-full accent-[#8b6b57]"
-            />
-            <div className="mt-3 flex gap-2">
-              {project.source === 'db' ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => startEdit(project)}
-                    className="rounded-md bg-[#b38763] px-3 py-1.5 text-xs font-medium text-white"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(project._id)}
-                    className="rounded-md bg-[#6f3f3f] px-3 py-1.5 text-xs font-medium text-white"
-                  >
-                    Delete
-                  </button>
-                </>
-              ) : (
-                <p className="text-xs">Source: Moodle projects feed</p>
-              )}
-            </div>
-          </li>
+            <h3 className="mb-3 text-sm font-semibold">{courseName}</h3>
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {groupedProjects[courseName].map((project) => (
+                <li
+                  key={project.id}
+                  className={`academy-card relative overflow-visible p-4 ${
+                    isDark ? 'academy-card-dark' : 'academy-card-light'
+                  }`}
+                >
+                  {sparkleProjectId === String(project.id) && project.source === 'db' ? (
+                    <CreationSparkle />
+                  ) : null}
+                  <h4 className="font-semibold">{project.title}</h4>
+                  <p className="text-sm">Deadline: {new Date(project.deadline).toLocaleString()}</p>
+                  <div className="mt-2 h-2.5 w-full rounded-full bg-[#d2c0b1]">
+                    <div
+                      className="h-2.5 rounded-full bg-[#8b6b57]"
+                      style={{ width: `${Math.max(0, Math.min(100, project.progress || 0))}%` }}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs">
+                    Progress:{' '}
+                    {project.source === 'db'
+                      ? dbProgressMap[project.id] ?? project.progress ?? 0
+                      : project.progress ?? 0}
+                    %
+                  </p>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={
+                      project.source === 'db'
+                        ? dbProgressMap[project.id] ?? project.progress ?? 0
+                        : project.progress ?? 0
+                    }
+                    onChange={(event) => handleProgressChange(project, Number(event.target.value))}
+                    className="mt-2 w-full accent-[#8b6b57]"
+                  />
+                  <div className="mt-3 flex gap-2">
+                    {project.source === 'db' ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => startEdit(project)}
+                          className="rounded-md bg-[#b38763] px-3 py-1.5 text-xs font-medium text-white"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(project._id)}
+                          className="rounded-md bg-[#6f3f3f] px-3 py-1.5 text-xs font-medium text-white"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    ) : (
+                      <p className="text-xs">Source: Moodle projects feed</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
     </section>
   )
 }

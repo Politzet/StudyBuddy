@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit'
 const initialState = {
   selectedCategory: 'tasks',
   latestSyncAt: '',
+  lastCreatedItem: null,
 }
 
 const dashboardSlice = createSlice({
@@ -15,8 +16,15 @@ const dashboardSlice = createSlice({
     setLatestSyncAt: (state, action) => {
       state.latestSyncAt = action.payload
     },
+    markItemCreated: (state, action) => {
+      state.lastCreatedItem = action.payload
+    },
+    clearLastCreatedItem: (state) => {
+      state.lastCreatedItem = null
+    },
   },
 })
 
-export const { setSelectedCategory, setLatestSyncAt } = dashboardSlice.actions
+export const { setSelectedCategory, setLatestSyncAt, markItemCreated, clearLastCreatedItem } =
+  dashboardSlice.actions
 export default dashboardSlice.reducer

@@ -3,11 +3,13 @@ import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import { useDispatch, useSelector } from 'react-redux'
 import Breadcrumbs from '../components/Breadcrumbs'
+import CreationSparkle from '../components/CreationSparkle'
+import CustomDropdown from '../components/CustomDropdown'
 import FormCard from '../components/FormCard'
 import { useTheme } from '../context/ThemeContext'
 import useFetch from '../hooks/useFetch'
 import { API_BASE_URL } from '../config/api'
-import { setSelectedCategory } from '../store/dashboardSlice'
+import { markItemCreated, setSelectedCategory } from '../store/dashboardSlice'
 import { getAlertClass } from '../styles/alertStyles'
 import { getFormInputClass } from '../styles/formStyles'
 
@@ -19,11 +21,21 @@ const initialForm = {
   room: '',
 }
 
-const normalizeDate = (value) => new Date(value).toISOString().slice(0, 10)
+const normalizeDate = (value) => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 function ExamsPage() {
   const dispatch = useDispatch()
   const { user } = useSelector((state) => state.user)
+  const lastCreatedItem = useSelector((state) => state.dashboard.lastCreatedItem)
   const userId = user?.id || ''
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -33,6 +45,8 @@ function ExamsPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
   const [selectedDay, setSelectedDay] = useState(() => new Date())
+  const [courseFilter, setCourseFilter] = useState('all')
+  const [sparkleExamId, setSparkleExamId] = useState('')
 
   useEffect(() => {
     dispatch(setSelectedCategory('exams'))
@@ -61,11 +75,48 @@ function ExamsPage() {
     }))
     return [...imported, ...mocked]
   }, [exams, moodleExams])
+  const courses = useMemo(
+    () => Array.from(new Set(allExams.map((exam) => exam.course).filter(Boolean))).sort(),
+    [allExams],
+  )
+  const normalizedCourseFilter =
+    courseFilter === 'all' || courses.includes(courseFilter) ? courseFilter : 'all'
+  const visibleExams = useMemo(
+    () =>
+      normalizedCourseFilter === 'all'
+        ? allExams
+        : allExams.filter((exam) => exam.course === normalizedCourseFilter),
+    [allExams, normalizedCourseFilter],
+  )
+  const groupedExams = useMemo(() => {
+    return visibleExams.reduce((acc, exam) => {
+      const courseName = exam.course || 'Unassigned Course'
+      if (!acc[courseName]) {
+        acc[courseName] = []
+      }
+      acc[courseName].push(exam)
+      return acc
+    }, {})
+  }, [visibleExams])
+  const groupedCourses = useMemo(() => Object.keys(groupedExams).sort(), [groupedExams])
 
   const selectedDateIso = normalizeDate(selectedDay)
+  const examDateSet = useMemo(
+    () => new Set(allExams.map((exam) => normalizeDate(exam.date)).filter(Boolean)),
+    [allExams],
+  )
   const selectedDateExams = allExams.filter(
     (exam) => normalizeDate(exam.date) === selectedDateIso,
   )
+
+  useEffect(() => {
+    if (!lastCreatedItem || lastCreatedItem.category !== 'exams' || !lastCreatedItem.id) {
+      return
+    }
+    setSparkleExamId(String(lastCreatedItem.id))
+    const timer = setTimeout(() => setSparkleExamId(''), 1000)
+    return () => clearTimeout(timer)
+  }, [lastCreatedItem])
 
   const triggerRefresh = () => {
     refetch()
@@ -108,6 +159,20 @@ function ExamsPage() {
         throw new Error(body.message || 'Failed to save exam')
       }
 
+      const savedExam = await response.json().catch(() => null)
+      if (!editingId) {
+        const createdExamId = savedExam?._id || savedExam?.id
+        if (createdExamId) {
+          dispatch(
+            markItemCreated({
+              category: 'exams',
+              id: String(createdExamId),
+              createdAt: Date.now(),
+            }),
+          )
+        }
+      }
+
       setFormData(initialForm)
       setEditingId('')
       setMessage(editingId ? 'Exam updated successfully.' : 'Exam created successfully.')
@@ -146,14 +211,27 @@ function ExamsPage() {
 
   return (
     <section
-      className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm ${
+      className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm transition-colors duration-300 ${
         isDark
-          ? 'border-[#5a463b] bg-[#2d221d]/85 text-[#f6ede6]'
-          : 'border-[#d9c7b8] bg-[#fff8f1]/88 text-[#453434]'
+          ? 'academy-page-dark border-[#7d654f]'
+          : 'academy-page-light border-[#d1bfa7]'
       }`}
     >
       <Breadcrumbs isDark={isDark} />
       <h2 className="text-2xl font-bold">Exams</h2>
+      <div className="mt-3 flex items-center gap-3">
+        <label className="text-xs font-medium">Filter by course:</label>
+        <CustomDropdown
+          value={normalizedCourseFilter}
+          onChange={setCourseFilter}
+          isDark={isDark}
+          className="min-w-[180px]"
+          options={[
+            { value: 'all', label: 'All courses' },
+            ...courses.map((course) => ({ value: course, label: course })),
+          ]}
+        />
+      </div>
 
       {error ? <div className={getAlertClass('error', isDark)}>{error}</div> : null}
       {errorMessage ? <div className={getAlertClass('error', isDark)}>{errorMessage}</div> : null}
@@ -161,16 +239,27 @@ function ExamsPage() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div
-          className={`rounded-xl border p-4 ${
-            isDark ? 'border-[#5a463b] bg-[#1f1612]/80' : 'border-[#d9c7b8] bg-[#fffaf4]/85'
-          }`}
+          className={`academy-card p-4 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
         >
-          <Calendar onChange={setSelectedDay} value={selectedDay} />
+          <Calendar
+            onChange={setSelectedDay}
+            value={selectedDay}
+            className={`academy-calendar ${isDark ? 'academy-calendar-dark' : 'academy-calendar-light'}`}
+            tileClassName={({ date, view }) => {
+              if (view === 'month' && examDateSet.has(normalizeDate(date))) {
+                return 'academy-calendar-has-exam'
+              }
+              return null
+            }}
+            tileContent={({ date, view }) =>
+              view === 'month' && examDateSet.has(normalizeDate(date)) ? (
+                <span className="academy-calendar-exam-dot" />
+              ) : null
+            }
+          />
 
           <div className="mt-4">
-            <h3 className="text-base font-semibold">
-              Exams on {new Date(selectedDateIso).toLocaleDateString()}
-            </h3>
+            <h3 className="text-base font-semibold">Exams on {selectedDay.toLocaleDateString()}</h3>
             {selectedDateExams.length === 0 ? (
               <p className={`mt-2 text-sm ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
                 No exams on this date.
@@ -279,44 +368,56 @@ function ExamsPage() {
         </p>
       ) : null}
 
-      <ul className="mt-6 space-y-3">
-        {allExams.map((exam) => (
-          <li
-            key={exam.id}
-            className={`rounded-xl border p-4 ${
-              isDark ? 'border-[#5a463b] bg-[#1f1612]/80' : 'border-[#d9c7b8] bg-[#fffaf4]/85'
-            }`}
+      <div className="mt-6 space-y-4">
+        {groupedCourses.map((courseName) => (
+          <div
+            key={courseName}
+            className={`academy-card p-4 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
           >
-            <h3 className="font-semibold">{exam.course}</h3>
-            <p className="text-sm">
-              {new Date(exam.date).toLocaleDateString()} at {exam.time}
-            </p>
-            <p className="text-sm">
-              {exam.location?.building} / {exam.location?.room}
-            </p>
-            {exam.source === 'db' ? (
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => startEdit(exam)}
-                  className="rounded-md bg-[#b38763] px-3 py-1.5 text-xs font-medium text-white"
+            <h3 className="mb-3 text-sm font-semibold">{courseName}</h3>
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {groupedExams[courseName].map((exam) => (
+                <li
+                  key={exam.id}
+                  className={`academy-card relative overflow-visible p-4 ${
+                    isDark ? 'academy-card-dark' : 'academy-card-light'
+                  }`}
                 >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(exam._id)}
-                  className="rounded-md bg-[#6f3f3f] px-3 py-1.5 text-xs font-medium text-white"
-                >
-                  Delete
-                </button>
-              </div>
-            ) : (
-              <p className="mt-3 text-xs">Source: Moodle schedule</p>
-            )}
-          </li>
+                  {sparkleExamId === String(exam.id) && exam.source === 'db' ? (
+                    <CreationSparkle />
+                  ) : null}
+                  <p className="text-sm">
+                    {new Date(exam.date).toLocaleDateString()} at {exam.time}
+                  </p>
+                  <p className="text-sm">
+                    {exam.location?.building} / {exam.location?.room}
+                  </p>
+                  {exam.source === 'db' ? (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(exam)}
+                        className="rounded-md bg-[#b38763] px-3 py-1.5 text-xs font-medium text-white"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(exam._id)}
+                        className="rounded-md bg-[#6f3f3f] px-3 py-1.5 text-xs font-medium text-white"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs">Source: Moodle schedule</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
     </section>
   )
 }

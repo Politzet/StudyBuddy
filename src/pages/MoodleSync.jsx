@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import CustomDropdown from '../components/CustomDropdown'
 import useFetch from '../hooks/useFetch'
 import { API_BASE_URL } from '../config/api'
 import { useTheme } from '../context/ThemeContext'
@@ -14,6 +15,7 @@ function MoodleSync() {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const [activeTab, setActiveTab] = useState('tasks')
+  const [selectedCourse, setSelectedCourse] = useState('all')
   const [importingKey, setImportingKey] = useState('')
   const [importDraft, setImportDraft] = useState(null)
   const [message, setMessage] = useState('')
@@ -177,6 +179,39 @@ function MoodleSync() {
     { id: 'projects', label: 'Projects' },
   ]
 
+  const activeItems = useMemo(() => {
+    if (activeTab === 'tasks') {
+      return moodleData.tasks.map((item, index) => ({ ...item, _index: index }))
+    }
+    if (activeTab === 'exams') {
+      return moodleData.exams.map((item, index) => ({ ...item, _index: index }))
+    }
+    return moodleData.projects.map((item, index) => ({ ...item, _index: index }))
+  }, [activeTab, moodleData])
+
+  const availableCourses = useMemo(() => {
+    const courses = activeItems.map((item) => item.course).filter(Boolean)
+    return Array.from(new Set(courses)).sort()
+  }, [activeItems])
+
+  const groupedItems = useMemo(() => {
+    const filtered =
+      selectedCourse === 'all'
+        ? activeItems
+        : activeItems.filter((item) => item.course === selectedCourse)
+
+    return filtered.reduce((acc, item) => {
+      const courseName = item.course || 'Unassigned Course'
+      if (!acc[courseName]) {
+        acc[courseName] = []
+      }
+      acc[courseName].push(item)
+      return acc
+    }, {})
+  }, [activeItems, selectedCourse])
+
+  const groupedCourses = useMemo(() => Object.keys(groupedItems).sort(), [groupedItems])
+
   return (
     <section
       className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm ${
@@ -222,7 +257,10 @@ function MoodleSync() {
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id)
+              setSelectedCourse('all')
+            }}
             className={`rounded-md px-4 py-2 text-sm font-medium ${
               activeTab === tab.id
                 ? 'bg-[#8b6b57] text-white'
@@ -235,6 +273,22 @@ function MoodleSync() {
           </button>
         ))}
       </div>
+
+      {!loading && !error ? (
+        <div className="mt-4 flex items-center gap-3">
+          <label className="text-xs font-medium">Filter by course:</label>
+          <CustomDropdown
+            value={selectedCourse}
+            onChange={setSelectedCourse}
+            isDark={isDark}
+            className="min-w-[180px]"
+            options={[
+              { value: 'all', label: 'All courses' },
+              ...availableCourses.map((course) => ({ value: course, label: course })),
+            ]}
+          />
+        </div>
+      ) : null}
 
       {error ? (
         <div className={getAlertClass('error', isDark)}>
@@ -266,93 +320,99 @@ function MoodleSync() {
         </div>
       ) : null}
 
-      {!loading && !error && activeTab === 'tasks' ? (
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {moodleData.tasks.map((task, index) => {
-            const key = `task-${index}`
-            return (
-              <li
-                key={key}
-                className={`rounded-lg border p-3 ${
-                  isDark ? 'border-[#5f4a3f] bg-[#2f241f]/90' : 'border-[#d9c7b8] bg-[#fffaf4]/95'
+      {!loading && !error ? (
+        groupedCourses.length === 0 ? (
+          <div
+            className={`mt-6 rounded-lg border px-4 py-5 text-sm ${
+              isDark ? 'border-[#5f4a3f] bg-[#2f241f]/90' : 'border-[#d9c7b8] bg-[#fffaf4]/95'
+            }`}
+          >
+            No items found for the selected course.
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4">
+            {groupedCourses.map((courseName) => (
+              <div
+                key={courseName}
+                className={`rounded-lg border p-4 ${
+                  isDark ? 'border-[#5f4a3f] bg-[#2a201b]/85' : 'border-[#d9c7b8] bg-[#fff7ef]/90'
                 }`}
               >
-                <h4 className="text-sm font-semibold">{task.title}</h4>
-                <p className="mt-1 text-xs">Course: {task.course}</p>
-                <p className="mt-1 text-xs">Due: {new Date(task.dueDate).toLocaleString()}</p>
-                <button
-                  type="button"
-                  onClick={() => importTask(task, index)}
-                  disabled={importingKey === key}
-                  className="mt-2 rounded-md bg-[#8b6b57] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[#785845] disabled:opacity-70"
-                >
-                  {importingKey === key ? 'Importing...' : 'Import'}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      ) : null}
+                <h3 className="mb-3 text-sm font-semibold">{courseName}</h3>
+                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {groupedItems[courseName].map((item) => {
+                    const keyPrefix =
+                      activeTab === 'tasks' ? 'task' : activeTab === 'exams' ? 'exam' : 'project'
+                    const key = `${keyPrefix}-${item._index}`
+                    return (
+                      <li
+                        key={key}
+                        className={`rounded-lg border p-3 ${
+                          isDark
+                            ? 'border-[#5f4a3f] bg-[#2f241f]/90'
+                            : 'border-[#d9c7b8] bg-[#fffaf4]/95'
+                        }`}
+                      >
+                        {activeTab === 'tasks' ? (
+                          <>
+                            <h4 className="text-sm font-semibold">{item.title}</h4>
+                            <p className="mt-1 text-xs">Due: {new Date(item.dueDate).toLocaleString()}</p>
+                            <button
+                              type="button"
+                              onClick={() => importTask(item, item._index)}
+                              disabled={importingKey === key}
+                              className="mt-2 rounded-md bg-[#8b6b57] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[#785845] disabled:opacity-70"
+                            >
+                              {importingKey === key ? 'Importing...' : 'Import'}
+                            </button>
+                          </>
+                        ) : null}
 
-      {!loading && !error && activeTab === 'exams' ? (
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {moodleData.exams.map((exam, index) => {
-            const key = `exam-${index}`
-            return (
-              <li
-                key={key}
-                className={`rounded-lg border p-3 ${
-                  isDark ? 'border-[#5f4a3f] bg-[#2f241f]/90' : 'border-[#d9c7b8] bg-[#fffaf4]/95'
-                }`}
-              >
-                <h4 className="text-sm font-semibold">{exam.course}</h4>
-                <p className="mt-1 text-xs">
-                  {new Date(exam.date).toLocaleDateString()} at {exam.time}
-                </p>
-                <p className="mt-1 text-xs">
-                  {exam.location?.building} / {exam.location?.room}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => importExam(exam, index)}
-                  disabled={importingKey === key}
-                  className="mt-2 rounded-md bg-[#8b6b57] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[#785845] disabled:opacity-70"
-                >
-                  {importingKey === key ? 'Importing...' : 'Import'}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      ) : null}
+                        {activeTab === 'exams' ? (
+                          <>
+                            <h4 className="text-sm font-semibold">{item.course}</h4>
+                            <p className="mt-1 text-xs">
+                              {new Date(item.date).toLocaleDateString()} at {item.time}
+                            </p>
+                            <p className="mt-1 text-xs">
+                              {item.location?.building} / {item.location?.room}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => importExam(item, item._index)}
+                              disabled={importingKey === key}
+                              className="mt-2 rounded-md bg-[#8b6b57] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[#785845] disabled:opacity-70"
+                            >
+                              {importingKey === key ? 'Importing...' : 'Import'}
+                            </button>
+                          </>
+                        ) : null}
 
-      {!loading && !error && activeTab === 'projects' ? (
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {moodleData.projects.map((project, index) => {
-            const key = `project-${index}`
-            return (
-              <li
-                key={key}
-                className={`rounded-lg border p-3 ${
-                  isDark ? 'border-[#5f4a3f] bg-[#2f241f]/90' : 'border-[#d9c7b8] bg-[#fffaf4]/95'
-                }`}
-              >
-                <h4 className="text-sm font-semibold">{project.title}</h4>
-                <p className="mt-1 text-xs">Course: {project.course}</p>
-                <p className="mt-1 text-xs">Deadline: {new Date(project.deadline).toLocaleString()}</p>
-                <p className="mt-1 text-xs">Weight: {project.weight}%</p>
-                <button
-                  type="button"
-                  onClick={() => importProject(project, index)}
-                  disabled={importingKey === key}
-                  className="mt-2 rounded-md bg-[#8b6b57] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[#785845] disabled:opacity-70"
-                >
-                  {importingKey === key ? 'Importing...' : 'Import'}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
+                        {activeTab === 'projects' ? (
+                          <>
+                            <h4 className="text-sm font-semibold">{item.title}</h4>
+                            <p className="mt-1 text-xs">
+                              Deadline: {new Date(item.deadline).toLocaleString()}
+                            </p>
+                            <p className="mt-1 text-xs">Weight: {item.weight}%</p>
+                            <button
+                              type="button"
+                              onClick={() => importProject(item, item._index)}
+                              disabled={importingKey === key}
+                              className="mt-2 rounded-md bg-[#8b6b57] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[#785845] disabled:opacity-70"
+                            >
+                              {importingKey === key ? 'Importing...' : 'Import'}
+                            </button>
+                          </>
+                        ) : null}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )
       ) : null}
     </section>
   )

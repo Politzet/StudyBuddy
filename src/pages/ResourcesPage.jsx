@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
+import CustomDropdown from '../components/CustomDropdown'
 import useFetch from '../hooks/useFetch'
 import { API_BASE_URL } from '../config/api'
 import { useTheme } from '../context/ThemeContext'
@@ -134,8 +135,8 @@ function ResourcesPage() {
     return map
   }, [favorites])
 
-  const handleCourseChange = (event) => {
-    setSelectedCourse(event.target.value)
+  const handleCourseChange = (nextCourse) => {
+    setSelectedCourse(nextCourse)
     setSelectedAssignment('')
     setRefreshSeed((prev) => prev + 1)
   }
@@ -297,42 +298,31 @@ function ResourcesPage() {
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2">
-        <select
+        <CustomDropdown
           value={effectiveCourse}
           onChange={handleCourseChange}
-          className={`rounded-md border px-3 py-2 text-sm ${
-            isDark
-              ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6]'
-              : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434]'
-          }`}
-        >
-          <option value="">Select Course</option>
-          {courses.map((course) => (
-            <option key={course} value={course}>
-              {course}
-            </option>
-          ))}
-        </select>
+          isDark={isDark}
+          options={[
+            { value: '', label: 'Select Course' },
+            ...courses.map((course) => ({ value: course, label: course })),
+          ]}
+        />
 
-        <select
+        <CustomDropdown
           value={effectiveAssignment}
-          onChange={(event) => {
-            setSelectedAssignment(event.target.value)
+          onChange={(nextAssignment) => {
+            setSelectedAssignment(nextAssignment)
             setRefreshSeed((prev) => prev + 1)
           }}
-          className={`rounded-md border px-3 py-2 text-sm ${
-            isDark
-              ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6]'
-              : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434]'
-          }`}
-        >
-          <option value="">Select Assignment</option>
-          {assignmentOptions.map((item) => (
-            <option key={item.id} value={item.title}>
-              {item.title} {item.kind === 'project' ? '(Project)' : '(Assignment)'}
-            </option>
-          ))}
-        </select>
+          isDark={isDark}
+          options={[
+            { value: '', label: 'Select Assignment' },
+            ...assignmentOptions.map((item) => ({
+              value: item.title,
+              label: `${item.title} ${item.kind === 'project' ? '(Project)' : '(Assignment)'}`,
+            })),
+          ]}
+        />
       </div>
 
       <p className={`mt-2 text-xs ${isDark ? 'text-[#d7c3b4]' : 'text-[#7c6558]'}`}>

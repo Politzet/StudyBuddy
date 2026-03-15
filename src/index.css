@@ -1,9 +1,227 @@
-@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Cinzel:wght@500;600;700&family=Spectral:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 body {
   margin: 0;
   min-width: 320px;
-  font-family: 'Atkinson Hyperlegible', 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana,
-    sans-serif;
+  font-family: 'Spectral', 'Assistant', 'Times New Roman', serif;
+  color: #2a3748;
+  transition: background-color 300ms ease, color 300ms ease;
 }
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Cinzel', 'Spectral', Georgia, serif;
+  letter-spacing: 0.01em;
+}
+
+[lang='he'],
+.rtl-hebrew {
+  font-family: 'Assistant', 'Frank Ruhl Libre', sans-serif;
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: plaintext;
+}
+
+.academy-page-light {
+  background-color: #f4eae0;
+  color: #2a3748;
+}
+
+.academy-page-dark {
+  background-color: #2d241e;
+  color: #f1e4cc;
+}
+
+.academy-card {
+  border: 1px solid #d1bfa7;
+  outline: 1px solid rgba(126, 95, 65, 0.45);
+  outline-offset: -5px;
+  border-radius: 14px;
+  box-shadow:
+    0 2px 6px rgba(54, 35, 18, 0.12),
+    inset 0 0 50px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 248, 237, 0.3);
+  transition: transform 220ms ease, box-shadow 220ms ease, background-color 220ms ease, color 220ms ease;
+}
+
+.academy-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 24px rgba(58, 37, 22, 0.2), inset 0 1px 0 rgba(255, 248, 237, 0.35);
+}
+
+.academy-card-light {
+  background-color: #f4eae0;
+  background-image: linear-gradient(
+    160deg,
+    rgba(214, 189, 160, 0.16) 0%,
+    rgba(255, 248, 237, 0.08) 35%,
+    rgba(197, 167, 134, 0.14) 100%
+  ),
+  radial-gradient(circle at 12% 18%, rgba(164, 121, 71, 0.08) 0, transparent 32%),
+  radial-gradient(circle at 78% 72%, rgba(140, 103, 58, 0.07) 0, transparent 34%);
+  color: #2a3748;
+}
+
+.academy-card-dark {
+  background-color: #2d241e;
+  background-image: linear-gradient(
+    160deg,
+    rgba(138, 110, 82, 0.22) 0%,
+    rgba(83, 64, 49, 0.26) 36%,
+    rgba(163, 138, 102, 0.18) 100%
+  ),
+  radial-gradient(circle at 18% 22%, rgba(187, 143, 86, 0.11) 0, transparent 30%),
+  radial-gradient(circle at 82% 70%, rgba(141, 104, 61, 0.12) 0, transparent 34%);
+  color: #f1dfb3;
+}
+
+.academy-sepia {
+  filter: sepia(0.18) saturate(0.9) contrast(0.96);
+}
+
+.academy-btn {
+  border: 1px solid rgba(209, 191, 167, 0.85);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 243, 217, 0.12),
+    0 4px 12px rgba(79, 51, 31, 0.16);
+  transition: all 220ms ease;
+}
+
+.academy-btn:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 227, 168, 0.35),
+    0 0 14px rgba(214, 172, 102, 0.38);
+}
+
+.academy-spell-toggle {
+  background: linear-gradient(130deg, #6e513f 0%, #9b775b 100%);
+  color: #f3e6cf;
+}
+
+.academy-spell-toggle:hover {
+  background: linear-gradient(130deg, #7a5b46 0%, #ac8867 100%);
+}
+
+main img,
+main svg {
+  filter: sepia(0.12) saturate(0.95);
+}
+
+input,
+textarea {
+  cursor: url('/images/feather.svg') 0 0, text !important;
+  transition: color 200ms ease;
+}
+
+.academy-calendar {
+  width: 100%;
+  border-radius: 14px;
+  padding: 0.75rem;
+  border: 1px solid #c8b39b;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 228, 0.35),
+    0 8px 20px rgba(73, 50, 31, 0.12);
+  font-family: 'Spectral', 'Assistant', serif;
+}
+
+.academy-calendar-light {
+  background: #f6eee4;
+  color: #2a3748;
+}
+
+.academy-calendar-dark {
+  background: #2d241e;
+  color: #f2e2c0;
+  border-color: #7d654f;
+}
+
+.academy-calendar .react-calendar__navigation button {
+  border-radius: 10px;
+  min-width: 42px;
+  font-weight: 700;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.academy-calendar-light .react-calendar__navigation button {
+  color: #453434;
+}
+
+.academy-calendar-dark .react-calendar__navigation button {
+  color: #f0dcc0;
+}
+
+.academy-calendar .react-calendar__navigation button:hover,
+.academy-calendar .react-calendar__navigation button:focus {
+  background: rgba(212, 175, 55, 0.2);
+}
+
+.academy-calendar .react-calendar__month-view__weekdays {
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.academy-calendar .react-calendar__month-view__weekdays__weekday {
+  padding: 0.5rem 0;
+}
+
+.academy-calendar .react-calendar__tile {
+  position: relative;
+  border-radius: 10px;
+  padding: 0.85rem 0.35rem 1.1rem;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.academy-calendar-light .react-calendar__tile {
+  color: #2a3748;
+}
+
+.academy-calendar-dark .react-calendar__tile {
+  color: #f2e6d3;
+}
+
+.academy-calendar .react-calendar__tile:enabled:hover,
+.academy-calendar .react-calendar__tile:enabled:focus {
+  background: rgba(212, 175, 55, 0.2);
+  transform: translateY(-1px);
+}
+
+.academy-calendar .react-calendar__tile--active,
+.academy-calendar .react-calendar__tile--active:enabled:hover,
+.academy-calendar .react-calendar__tile--active:enabled:focus {
+  background: #8b6b57;
+  color: #fff7e9;
+}
+
+.academy-calendar .react-calendar__tile--now {
+  background: rgba(139, 107, 87, 0.18);
+}
+
+.academy-calendar .react-calendar__month-view__days__day--weekend {
+  color: inherit;
+}
+
+.academy-calendar .academy-calendar-has-exam {
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.24), rgba(212, 175, 55, 0.08));
+  font-weight: 700;
+}
+
+.academy-calendar .academy-calendar-exam-dot {
+  position: absolute;
+  left: 50%;
+  bottom: 0.35rem;
+  transform: translateX(-50%);
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 9999px;
+  background: #d4af37;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+}
+

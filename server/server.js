@@ -565,15 +565,10 @@ app.get('/api/tasks', async (_req, res) => {
     const query = {}
 
     if (userId) {
-      query.$and = [{ $or: [{ userId }, { userId: { $exists: false } }, { userId: '' }] }]
+      query.userId = userId
     }
     if (category === 'tasks') {
-      const categoryClause = { $or: [{ category: 'tasks' }, { category: { $exists: false } }] }
-      if (query.$and) {
-        query.$and.push(categoryClause)
-      } else {
-        Object.assign(query, categoryClause)
-      }
+      query.category = 'tasks'
     } else if (category) {
       query.category = category
     }

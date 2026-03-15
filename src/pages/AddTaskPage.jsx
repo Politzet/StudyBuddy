@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import CustomDropdown from '../components/CustomDropdown'
 import { useTheme } from '../context/ThemeContext'
 import useLocalStorage from '../hooks/useLocalStorage'
 import useFetch from '../hooks/useFetch'
@@ -217,6 +218,7 @@ function AddTaskPage() {
           ? `Last task added: ${lastTaskAdded || 'No task added yet'}`
           : 'Log in to track the last task you added.'}
       </p>
+      <div lang="he" className="rtl-hebrew">
       {submitError ? (
         <div className={getAlertClass('error', isDark)}>{submitError}</div>
       ) : null}
@@ -361,24 +363,21 @@ function AddTaskPage() {
           <label htmlFor="course" className="mb-1 block text-sm font-medium">
             קורס
           </label>
-          <select
-            id="course"
-            name="course"
+          <CustomDropdown
             value={formData.course}
-            onChange={handleChange}
-            className={`w-full rounded-md border px-3 py-2 focus:outline-none ${
-              isDark
-                ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6] focus:border-[#8b6b57]'
-                : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434] focus:border-[#8b6b57]'
-            }`}
-          >
-            <option value="">Please select</option>
-            {courses.map((course) => (
-              <option key={course._id} value={course.name}>
-                {course.name}
-              </option>
-            ))}
-          </select>
+            onChange={(nextCourse) =>
+              setFormData((prev) => ({
+                ...prev,
+                course: nextCourse,
+              }))
+            }
+            isDark={isDark}
+            className="w-full"
+            options={[
+              { value: '', label: 'Please select' },
+              ...courses.map((course) => ({ value: course.name, label: course.name })),
+            ]}
+          />
           {errors.course ? (
             <p className="mt-1 text-sm text-red-600">{errors.course}</p>
           ) : null}
@@ -436,6 +435,7 @@ function AddTaskPage() {
           {isSubmitting ? 'Saving...' : 'Submit'}
         </button>
       </form>
+      </div>
     </section>
   )
 }

@@ -1,28 +1,63 @@
-import { Link, NavLink } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { useTheme } from '../context/ThemeContext'
 import { logout } from '../store/userSlice'
 
 const navClassName = (isDark) => ({ isActive }) =>
-  `rounded-md px-3 py-2 text-sm font-medium transition ${
+  `academy-btn rounded-md px-3 py-2 text-sm font-medium transition ${
     isActive
       ? isDark
-        ? 'bg-[#8b6b57] text-white'
-        : 'bg-[#8b6b57] text-white'
+        ? 'bg-[#8b6b57] text-[#f3e6cf]'
+        : 'bg-[#8b6b57] text-[#f3e6cf]'
       : isDark
-        ? 'bg-[#3a2d26]/90 text-[#f5e7db] hover:bg-[#4a382f]'
-        : 'bg-[#fff7ef] text-[#5a463b] hover:bg-[#f1e2d5]'
+        ? 'bg-[#3a2d26]/90 text-[#f1dfb3] hover:bg-[#4a382f]'
+        : 'bg-[#f4eae0] text-[#2a3748] hover:bg-[#f1e2d5]'
   }`
 
 function Navbar() {
   const dispatch = useDispatch()
+  const location = useLocation()
   const { user, isLoggedIn } = useSelector((state) => state.user)
   const { theme, toggleTheme } = useTheme()
   const isDark = theme === 'dark'
+  const [isHomeMenuOpen, setIsHomeMenuOpen] = useState(false)
+  const homeMenuRef = useRef(null)
+  const homeRoutes = ['/home', '/tasks', '/exams', '/projects', '/other']
+  const isHomeMenuActive = homeRoutes.includes(location.pathname)
+
+  const handleLogout = () => {
+    if (!window.confirm('Are you sure you want to logout?')) {
+      return
+    }
+    dispatch(logout())
+  }
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!homeMenuRef.current?.contains(event.target)) {
+        setIsHomeMenuOpen(false)
+      }
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsHomeMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [])
 
   return (
     <header
-      className={`border-b backdrop-blur-sm ${
+      className={`relative z-50 border-b backdrop-blur-sm ${
         isDark
           ? 'border-[#5a463b] bg-[#2d221d]/90 text-[#f6ede6]'
           : 'border-[#d7c5b7] bg-[#fff8f1]/90 text-[#453434]'
@@ -32,10 +67,52 @@ function Navbar() {
         <Link to="/home" className="text-xl font-bold transition hover:opacity-80">
           StudyBuddy
         </Link>
-        <nav className="flex items-center gap-2">
-          <NavLink to="/home" className={navClassName(isDark)}>
-            Home
-          </NavLink>
+        <nav className="relative z-50 flex items-center gap-2">
+          <div className="relative" ref={homeMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsHomeMenuOpen((prev) => !prev)}
+              aria-expanded={isHomeMenuOpen}
+              aria-haspopup="menu"
+              className={`academy-btn rounded-md px-3 py-2 text-sm font-medium transition ${
+                isHomeMenuActive
+                  ? 'bg-[#8b6b57] text-[#f3e6cf]'
+                  : isDark
+                    ? 'bg-[#3a2d26]/90 text-[#f1dfb3] hover:bg-[#4a382f]'
+                    : 'bg-[#f4eae0] text-[#2a3748] hover:bg-[#f1e2d5]'
+              }`}
+            >
+              Home ▾
+            </button>
+            {isHomeMenuOpen ? (
+              <div
+                className={`absolute left-0 top-full z-[100] mt-2 w-52 rounded-lg border p-1 shadow-2xl ${
+                  isDark
+                    ? 'border-[#8b6a4d] bg-[#2d241e]'
+                    : 'border-[#d7c5b7] bg-[#f4eae0]'
+                }`}
+              >
+                {[
+                  { label: 'Dashboard Home', to: '/home' },
+                  { label: 'Tasks', to: '/tasks' },
+                  { label: 'Exams', to: '/exams' },
+                  { label: 'Projects', to: '/projects' },
+                  { label: 'Other', to: '/other' },
+                ].map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setIsHomeMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `block rounded-md px-3 py-2 text-sm ${isActive ? 'bg-[#8b6b57] text-white' : isDark ? 'text-[#f5e7db] hover:bg-[#3a2d26]' : 'text-[#5a463b] hover:bg-[#f1e2d5]'}`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <NavLink to="/api" className={navClassName(isDark)}>
             Resources
           </NavLink>
@@ -45,9 +122,9 @@ function Navbar() {
           <button
             type="button"
             onClick={toggleTheme}
-            className="rounded-md bg-[#8b6b57] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#785845]"
+            className="academy-btn academy-spell-toggle rounded-md px-3 py-2 text-sm font-medium transition"
           >
-            {isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            {isDark ? 'Lumos' : 'Nox'}
           </button>
           <span className="ml-1 text-sm font-medium">
             {isLoggedIn ? `Hello, ${user?.name ?? 'Student'}` : 'Guest'}
@@ -55,8 +132,8 @@ function Navbar() {
           {isLoggedIn ? (
             <button
               type="button"
-              onClick={() => dispatch(logout())}
-              className="rounded-md bg-[#6f3f3f] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#5d3434]"
+              onClick={handleLogout}
+              className="academy-btn rounded-md bg-[#6f3f3f] px-3 py-2 text-sm font-medium text-[#f3e6cf] transition hover:bg-[#5d3434]"
             >
               Logout
             </button>
