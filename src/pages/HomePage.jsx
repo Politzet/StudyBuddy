@@ -7,6 +7,7 @@ import useFetch from '../hooks/useFetch'
 import { API_BASE_URL } from '../config/api'
 import Breadcrumbs from '../components/Breadcrumbs'
 import CustomDropdown from '../components/CustomDropdown'
+import AcademyCalendarModal from '../components/AcademyCalendarModal'
 import { setSelectedCategory } from '../store/dashboardSlice'
 import { getAlertClass } from '../styles/alertStyles'
 
@@ -17,21 +18,21 @@ const dashboardCards = [
   { id: 'other', label: 'Other', path: '/other' },
 ]
 
-const getTaskCountDueThisWeek = (tasks) => {
-  const now = new Date()
-  const weekAhead = new Date(now)
-  weekAhead.setDate(now.getDate() + 7)
-
-  return tasks.filter((task) => {
-    const due = new Date(task.dueDate)
-    return due >= now && due <= weekAhead
-  }).length
-}
-
 const getExamDateTime = (exam) => {
   const datePart = new Date(exam.date).toISOString().slice(0, 10)
   const startTime = String(exam.time || '00:00').split('-')[0].trim()
   return new Date(`${datePart}T${startTime || '00:00'}`)
+}
+
+const normalizeDate = (value) => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 const dashboardStagger = {
@@ -51,28 +52,42 @@ const dashboardItem = {
 }
 
 function HomePage() {
+  const MotionSection = motion.section
+  const MotionDiv = motion.div
+  const MotionButton = motion.button
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { user } = useSelector((state) => state.user)
-  const { latestSyncAt } = useSelector((state) => state.dashboard)
   const userId = user?.id || ''
   const { theme } = useTheme()
   const isDark = theme === 'dark'
+  const [pageRenderSeed] = useState(() => Date.now())
   const [selectedCourse, setSelectedCourse] = useState('all')
+  const [showCalendarModal, setShowCalendarModal] = useState(false)
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState(() => new Date())
+  const [calendarTypeFilter, setCalendarTypeFilter] = useState({
+    tasks: true,
+    exams: true,
+    projects: true,
+    others: true,
+  })
 
   const tasksQuery = `${API_BASE_URL}/api/tasks?userId=${encodeURIComponent(userId)}&category=tasks`
   const examsQuery = `${API_BASE_URL}/api/exams?userId=${encodeURIComponent(userId)}`
   const projectsQuery = `${API_BASE_URL}/api/projects?userId=${encodeURIComponent(userId)}`
+  const othersQuery = `${API_BASE_URL}/api/others?userId=${encodeURIComponent(userId)}`
   const moodleQuery = `${API_BASE_URL}/api/moodle/sync`
 
   const { data: tasksData, error: tasksError } = useFetch(tasksQuery)
   const { data: examsData, error: examsError } = useFetch(examsQuery)
   const { data: projectsData, error: projectsError } = useFetch(projectsQuery)
+  const { data: othersData, error: othersError } = useFetch(othersQuery)
   const { data: moodleData, error: moodleError } = useFetch(moodleQuery)
 
   const tasks = useMemo(() => (Array.isArray(tasksData) ? tasksData : []), [tasksData])
   const exams = useMemo(() => (Array.isArray(examsData) ? examsData : []), [examsData])
   const projects = useMemo(() => (Array.isArray(projectsData) ? projectsData : []), [projectsData])
+  const others = useMemo(() => (Array.isArray(othersData) ? othersData : []), [othersData])
   const moodleExams = useMemo(
     () => (Array.isArray(moodleData?.exams) ? moodleData.exams : []),
     [moodleData],
@@ -107,6 +122,82 @@ function HomePage() {
     )
     return [...manualProjects, ...extraMoodleProjects]
   }, [projects, moodleProjects])
+  const allOthers = useMemo(
+    () => (userId ? others.filter((item) => String(item.userId || '') === String(userId)) : []),
+    [others, userId],
+  )
+  const selectedCalendarDateIso = normalizeDate(selectedCalendarDay)
+  const calendarEventsByDate = useMemo(() => {
+    const eventsByDate = {}
+    const ensureBucket = (dateKey) => {
+      if (!dateKey) {
+        return null
+      }
+      if (!eventsByDate[dateKey]) {
+        eventsByDate[dateKey] = {
+          tasks: [],
+          exams: [],
+          projects: [],
+          others: [],
+        }
+      }
+      return eventsByDate[dateKey]
+    }
+
+    allTasks.forEach((task) => {
+      const dateKey = normalizeDate(task.dueDate)
+      const bucket = ensureBucket(dateKey)
+      if (bucket) {
+        bucket.tasks.push(task)
+      }
+    })
+
+    allExams.forEach((exam) => {
+      const dateKey = normalizeDate(exam.date)
+      const bucket = ensureBucket(dateKey)
+      if (bucket) {
+        bucket.exams.push(exam)
+      }
+    })
+
+    allProjects.forEach((project) => {
+      const dateKey = normalizeDate(project.deadline)
+      const bucket = ensureBucket(dateKey)
+      if (bucket) {
+        bucket.projects.push(project)
+      }
+    })
+
+    allOthers.forEach((item) => {
+      const dateKey = normalizeDate(item.deadline)
+      const bucket = ensureBucket(dateKey)
+      if (bucket) {
+        bucket.others.push(item)
+      }
+    })
+
+    return eventsByDate
+  }, [allTasks, allExams, allProjects, allOthers])
+
+  const filteredCalendarEventsByDate = useMemo(() => {
+    const next = {}
+    Object.entries(calendarEventsByDate).forEach(([dateKey, dayEvents]) => {
+      next[dateKey] = {
+        tasks: calendarTypeFilter.tasks ? dayEvents.tasks : [],
+        exams: calendarTypeFilter.exams ? dayEvents.exams : [],
+        projects: calendarTypeFilter.projects ? dayEvents.projects : [],
+        others: calendarTypeFilter.others ? dayEvents.others : [],
+      }
+    })
+    return next
+  }, [calendarEventsByDate, calendarTypeFilter])
+
+  const selectedCalendarEvents = filteredCalendarEventsByDate[selectedCalendarDateIso] || {
+    tasks: [],
+    exams: [],
+    projects: [],
+    others: [],
+  }
 
   const upcomingWeekExams = useMemo(() => {
     const now = new Date()
@@ -126,7 +217,7 @@ function HomePage() {
     if (!allExams.length) {
       return null
     }
-    const now = Date.now()
+    const now = pageRenderSeed
     const normalized = allExams
       .map((exam) => ({
         ...exam,
@@ -152,7 +243,7 @@ function HomePage() {
       })
 
     return normalized[0] || null
-  }, [allExams])
+  }, [allExams, pageRenderSeed])
 
   const openTasksDueThisWeek = useMemo(() => {
     const now = new Date()
@@ -172,9 +263,9 @@ function HomePage() {
 
   const magicalHeadline = useMemo(() => {
     const headings = ['THE ENCHANTED SUMMARY', 'WEEKLY OMEN & NOTICES']
-    const weekSeed = Math.floor(Date.now() / (1000 * 60 * 60 * 24 * 7))
+    const weekSeed = Math.floor(pageRenderSeed / (1000 * 60 * 60 * 24 * 7))
     return headings[weekSeed % headings.length]
-  }, [])
+  }, [pageRenderSeed])
 
   const courses = useMemo(() => {
     const allCourses = [
@@ -203,11 +294,22 @@ function HomePage() {
     dispatch(setSelectedCategory(id))
     navigate(path)
   }
+  const toggleCalendarType = (type) => {
+    setCalendarTypeFilter((prev) => ({ ...prev, [type]: !prev[type] }))
+  }
+  const resetCalendarFilters = () => {
+    setCalendarTypeFilter({
+      tasks: true,
+      exams: true,
+      projects: true,
+      others: true,
+    })
+  }
 
-  const anyError = tasksError || examsError || projectsError || moodleError
+  const anyError = tasksError || examsError || projectsError || othersError || moodleError
 
   return (
-    <motion.section
+    <MotionSection
       variants={dashboardStagger}
       initial="hidden"
       animate="show"
@@ -218,14 +320,25 @@ function HomePage() {
       }`}
     >
       <Breadcrumbs isDark={isDark} />
-      <h2 className="text-3xl font-bold">Hybrid Dashboard</h2>
-      <p className={`mt-1 text-sm ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
-        Smart overview of your academic timeline.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-3xl font-bold">Hybrid Dashboard</h2>
+          <p className={`mt-1 text-sm ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
+            Smart overview of your academic timeline.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowCalendarModal(true)}
+          className="academy-btn rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-[#f3e6cf] transition hover:bg-[#785845]"
+        >
+          Open Calendar
+        </button>
+      </div>
 
       {anyError ? <div className={getAlertClass('error', isDark)}>{anyError}</div> : null}
 
-      <motion.div
+      <MotionDiv
         variants={dashboardItem}
         className={`academy-card mt-6 p-6 text-center ${
           isDark ? 'academy-card-dark' : 'academy-card-light'
@@ -284,11 +397,25 @@ function HomePage() {
             ))}
           </ul>
         ) : null}
-      </motion.div>
+      </MotionDiv>
 
-      <motion.div variants={dashboardItem} className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <AcademyCalendarModal
+        isOpen={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        isDark={isDark}
+        selectedDay={selectedCalendarDay}
+        onDayChange={setSelectedCalendarDay}
+        normalizeDate={normalizeDate}
+        filteredEventsByDate={filteredCalendarEventsByDate}
+        selectedEvents={selectedCalendarEvents}
+        calendarTypeFilter={calendarTypeFilter}
+        onToggleType={toggleCalendarType}
+        onResetFilters={resetCalendarFilters}
+      />
+
+      <MotionDiv variants={dashboardItem} className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {dashboardCards.map((card) => (
-          <motion.button
+          <MotionButton
             variants={dashboardItem}
             key={card.id}
             type="button"
@@ -296,11 +423,11 @@ function HomePage() {
             className={`academy-card p-6 text-left ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
           >
             <h3 className="text-lg font-semibold">{card.label}</h3>
-          </motion.button>
+          </MotionButton>
         ))}
-      </motion.div>
+      </MotionDiv>
 
-      <motion.div
+      <MotionDiv
         variants={dashboardItem}
         className={`academy-card mt-6 p-4 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
       >
@@ -318,31 +445,31 @@ function HomePage() {
           />
         </div>
 
-        <motion.div variants={dashboardStagger} className="mt-4 flex gap-3 overflow-x-auto pb-2">
-          <motion.div
+        <MotionDiv variants={dashboardStagger} className="mt-4 flex gap-3 overflow-x-auto pb-2">
+          <MotionDiv
             variants={dashboardItem}
             className={`academy-card min-w-[170px] p-3 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
           >
             <p className="text-xs uppercase tracking-wide">Tasks</p>
             <p className="mt-1 text-xl font-bold">{courseSummary.tasksCount}</p>
-          </motion.div>
-          <motion.div
+          </MotionDiv>
+          <MotionDiv
             variants={dashboardItem}
             className={`academy-card min-w-[170px] p-3 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
           >
             <p className="text-xs uppercase tracking-wide">Exams</p>
             <p className="mt-1 text-xl font-bold">{courseSummary.examsCount}</p>
-          </motion.div>
-          <motion.div
+          </MotionDiv>
+          <MotionDiv
             variants={dashboardItem}
             className={`academy-card min-w-[170px] p-3 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
           >
             <p className="text-xs uppercase tracking-wide">Projects</p>
             <p className="mt-1 text-xl font-bold">{courseSummary.projectsCount}</p>
-          </motion.div>
-        </motion.div>
-      </motion.div>
-    </motion.section>
+          </MotionDiv>
+        </MotionDiv>
+      </MotionDiv>
+    </MotionSection>
   )
 }
 

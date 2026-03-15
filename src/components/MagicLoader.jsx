@@ -13,8 +13,9 @@ const BURST_PARTICLES = Array.from({ length: 44 }, (_, index) => {
 })
 
 function Sigil({ burst = false }) {
+  const MotionSvg = motion.svg
   return (
-    <motion.svg
+    <MotionSvg
       width="170"
       height="170"
       viewBox="0 0 120 120"
@@ -39,37 +40,40 @@ function Sigil({ burst = false }) {
       <circle cx="60" cy="60" r="20" stroke="#f2cf7a" strokeWidth="2.6" fill="none" />
       <path d="M44 76L60 44L76 76" stroke="#e9bb5a" strokeWidth="3" fill="none" />
       <path d="M47 54H73" stroke="#e7b14f" strokeWidth="2.4" />
-    </motion.svg>
+    </MotionSvg>
   )
 }
 
 function OrbitingSparkles() {
+  const MotionDiv = motion.div
+  const MotionSpan = motion.span
   return (
     <>
       {ORBITS.map((radius, idx) => (
-        <motion.div
+        <MotionDiv
           key={radius}
           className="absolute left-1/2 top-1/2"
           animate={{ rotate: [0, 360] }}
           transition={{ repeat: Infinity, duration: 3.8 + idx * 1.1, ease: 'linear' }}
         >
-          <motion.span
+          <MotionSpan
             className="absolute h-2 w-2 rounded-full bg-[#f5cf7b]"
             style={{ left: radius, top: -2 }}
             animate={{ opacity: [0.3, 1, 0.3], scale: [0.7, 1.2, 0.7] }}
             transition={{ repeat: Infinity, duration: 1.2 + idx * 0.3 }}
           />
-        </motion.div>
+        </MotionDiv>
       ))}
     </>
   )
 }
 
 function FairydustBurst() {
+  const MotionSpan = motion.span
   return (
     <div className="pointer-events-none absolute inset-0">
       {BURST_PARTICLES.map((particle, index) => (
-        <motion.span
+        <MotionSpan
           key={`${particle.x}-${particle.y}-${index}`}
           className="absolute left-1/2 top-1/2 h-2 w-2 rounded-full"
           style={{ backgroundColor: particle.color }}

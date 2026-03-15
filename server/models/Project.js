@@ -22,6 +22,11 @@ const projectSchema = new mongoose.Schema(
       type: Date,
       required: [true, 'Deadline is required'],
     },
+    studyDays: {
+      type: Number,
+      min: [1, 'Study days must be at least 1'],
+      default: 1,
+    },
     progress: {
       type: Number,
       min: [0, 'Progress must be between 0 and 100'],

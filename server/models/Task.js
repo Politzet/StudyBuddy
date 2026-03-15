@@ -27,6 +27,11 @@ const taskSchema = new mongoose.Schema({
     type: Date,
     required: [true, 'Due date is required'],
   },
+  studyDays: {
+    type: Number,
+    min: [1, 'Study days must be at least 1'],
+    default: 1,
+  },
   status: {
     type: String,
     enum: ['not_started', 'in_progress', 'done'],

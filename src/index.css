@@ -129,6 +129,12 @@ textarea {
   font-family: 'Spectral', 'Assistant', serif;
 }
 
+.academy-calendar-popup {
+  max-width: none;
+  padding: 1rem;
+  border-radius: 16px;
+}
+
 .academy-calendar-light {
   background: #f6eee4;
   color: #2a3748;
@@ -211,17 +217,76 @@ textarea {
 .academy-calendar .academy-calendar-has-exam {
   background: linear-gradient(180deg, rgba(212, 175, 55, 0.24), rgba(212, 175, 55, 0.08));
   font-weight: 700;
+  outline: 1px solid rgba(212, 175, 55, 0.55);
+}
+
+.academy-calendar .academy-calendar-has-task {
+  background: linear-gradient(180deg, rgba(160, 118, 83, 0.24), rgba(160, 118, 83, 0.08));
+}
+
+.academy-calendar .academy-calendar-has-project {
+  background: linear-gradient(180deg, rgba(116, 154, 98, 0.24), rgba(116, 154, 98, 0.08));
+}
+
+.academy-calendar .academy-calendar-has-other {
+  background: linear-gradient(180deg, rgba(131, 118, 177, 0.24), rgba(131, 118, 177, 0.08));
+}
+
+.academy-calendar .academy-calendar-event-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 0.3rem;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.16rem;
 }
 
 .academy-calendar .academy-calendar-exam-dot {
-  position: absolute;
-  left: 50%;
-  bottom: 0.35rem;
-  transform: translateX(-50%);
-  width: 0.42rem;
-  height: 0.42rem;
+  width: 0.48rem;
+  height: 0.48rem;
   border-radius: 9999px;
   background: #d4af37;
   box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+}
+
+.academy-calendar .academy-calendar-task-dot,
+.academy-calendar .academy-calendar-project-dot,
+.academy-calendar .academy-calendar-other-dot {
+  width: 0.34rem;
+  height: 0.34rem;
+  border-radius: 9999px;
+}
+
+.academy-calendar .academy-calendar-task-dot {
+  background: #9d704d;
+}
+
+.academy-calendar .academy-calendar-project-dot {
+  background: #5f8d58;
+}
+
+.academy-calendar .academy-calendar-other-dot {
+  background: #7d66b0;
+}
+
+.academy-legend-exam {
+  color: #d4af37;
+  background: rgba(212, 175, 55, 0.14);
+}
+
+.academy-legend-task {
+  color: #9d704d;
+  background: rgba(157, 112, 77, 0.14);
+}
+
+.academy-legend-project {
+  color: #5f8d58;
+  background: rgba(95, 141, 88, 0.14);
+}
+
+.academy-legend-other {
+  color: #7d66b0;
+  background: rgba(125, 102, 176, 0.14);
 }
 

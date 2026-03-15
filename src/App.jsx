@@ -29,12 +29,12 @@ function ProtectedRoute({ children }) {
 }
 
 function App() {
+  const MotionDiv = motion.div
   const location = useLocation()
   const isAuthPage = location.pathname === '/' || location.pathname === '/register'
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const [bgIndex, setBgIndex] = useState(0)
-  const [showRouteMist, setShowRouteMist] = useState(false)
 
   useEffect(() => {
     const timers = new WeakMap()
@@ -80,12 +80,6 @@ function App() {
     setBgIndex((prev) => Math.min(prev + 1, appBgCandidates.length - 1))
   }
 
-  useEffect(() => {
-    setShowRouteMist(true)
-    const timer = setTimeout(() => setShowRouteMist(false), 360)
-    return () => clearTimeout(timer)
-  }, [location.pathname])
-
   return (
     <div className="relative min-h-screen overflow-hidden transition-colors duration-300">
       {!isAuthPage ? (
@@ -109,21 +103,19 @@ function App() {
 
         <main className={isAuthPage ? '' : 'mx-auto w-full max-w-5xl px-4 py-8 transition-colors duration-300'}>
           <div className="relative">
-            <AnimatePresence>
-              {showRouteMist ? (
-                <motion.div
-                  key={`mist-${location.pathname}`}
-                  initial={{ opacity: 0, x: '-115%' }}
-                  animate={{ opacity: [0, 0.2, 0], x: ['-115%', '0%', '115%'] }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.36, ease: 'easeInOut' }}
-                  className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-r from-transparent via-[#2f2119]/28 to-transparent"
-                />
-              ) : null}
+            <AnimatePresence mode="wait" initial={false}>
+              <MotionDiv
+                key={`mist-${location.pathname}`}
+                initial={{ opacity: 0, x: '-115%' }}
+                animate={{ opacity: [0, 0.2, 0], x: ['-115%', '0%', '115%'] }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.36, ease: 'easeInOut' }}
+                className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-r from-transparent via-[#2f2119]/28 to-transparent"
+              />
             </AnimatePresence>
 
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div
+              <MotionDiv
                 key={location.pathname}
                 initial={{ opacity: 0, y: 20, scale: 1 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -131,7 +123,7 @@ function App() {
                 transition={{ duration: 0.34, ease: [0.22, 0.61, 0.36, 1] }}
                 className="relative"
               >
-                <motion.div
+                <MotionDiv
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: [0, 0.18, 0], scale: [0.96, 1.02, 1] }}
                   transition={{ duration: 0.38, ease: 'easeOut' }}
@@ -207,7 +199,7 @@ function App() {
                   />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
-              </motion.div>
+              </MotionDiv>
             </AnimatePresence>
           </div>
         </main>

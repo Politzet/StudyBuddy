@@ -4,11 +4,12 @@ import { AnimatePresence, motion } from 'framer-motion'
 import Breadcrumbs from '../components/Breadcrumbs'
 import CreationSparkle from '../components/CreationSparkle'
 import CustomDropdown from '../components/CustomDropdown'
+import ModalPortal from '../components/ModalPortal'
 import { useTheme } from '../context/ThemeContext'
 import useFetch from '../hooks/useFetch'
 import useLocalStorage from '../hooks/useLocalStorage'
 import { API_BASE_URL } from '../config/api'
-import { markItemCreated, setSelectedCategory } from '../store/dashboardSlice'
+import { clearLastCreatedItem, markItemCreated, setSelectedCategory } from '../store/dashboardSlice'
 import { getAlertClass } from '../styles/alertStyles'
 import { TASK_STATUS_OPTIONS } from '../constants/taskStatus'
 
@@ -32,18 +33,49 @@ function TasksPage() {
   const [showTrashFx, setShowTrashFx] = useState(false)
   const [trashPulse, setTrashPulse] = useState(false)
   const [sparkleTaskId, setSparkleTaskId] = useState('')
+  const [courseActionError, setCourseActionError] = useState('')
+  const [courseNameInput, setCourseNameInput] = useState('')
+  const [isAddingCourse, setIsAddingCourse] = useState(false)
+  const [coursesRefreshKey, setCoursesRefreshKey] = useState(0)
   const [addTaskData, setAddTaskData] = useState({
     title: '',
     course: '',
     dueDate: '',
+    studyDays: 1,
     status: 'not_started',
   })
   const [editTaskData, setEditTaskData] = useState({
     title: '',
     course: '',
     dueDate: '',
+    studyDays: 1,
     status: 'not_started',
   })
+
+  const validateStudyDays = (dueDateValue, studyDaysValue) => {
+    const dueDate = new Date(dueDateValue)
+    if (Number.isNaN(dueDate.getTime())) {
+      return 'Please select a valid due date.'
+    }
+
+    const dueAtEndOfDay = new Date(dueDate)
+    dueAtEndOfDay.setHours(23, 59, 59, 999)
+
+    const now = new Date()
+    const msPerDay = 1000 * 60 * 60 * 24
+    const daysLeft = Math.ceil((dueAtEndOfDay.getTime() - now.getTime()) / msPerDay)
+
+    if (daysLeft <= 0) {
+      return 'Due date must be in the future.'
+    }
+
+    const normalizedStudyDays = Number(studyDaysValue) || 1
+    if (normalizedStudyDays > daysLeft) {
+      return `You entered ${normalizedStudyDays} study days, but only ${daysLeft} day(s) are left until the due date.`
+    }
+
+    return ''
+  }
 
   useEffect(() => {
     dispatch(setSelectedCategory('tasks'))
@@ -57,8 +89,17 @@ function TasksPage() {
   } = useFetch(
     `${API_BASE_URL}/api/tasks?userId=${encodeURIComponent(userId)}&category=tasks&r=${refreshKey}`,
   )
+  const {
+    data: coursesData,
+    error: coursesError,
+    refetch: refetchCourses,
+  } = useFetch(`${API_BASE_URL}/api/courses?r=${coursesRefreshKey}`)
 
   const tasks = useMemo(() => (Array.isArray(tasksData) ? tasksData : []), [tasksData])
+  const availableCourses = useMemo(
+    () => (Array.isArray(coursesData) ? coursesData.map((course) => course.name).filter(Boolean).sort() : []),
+    [coursesData],
+  )
   const allTasks = useMemo(
     () => (userId ? tasks.filter((task) => String(task.userId || '') === String(userId)) : []),
     [tasks, userId],
@@ -88,6 +129,7 @@ function TasksPage() {
     }, {})
   }, [visibleTasks])
   const groupedCourses = useMemo(() => Object.keys(groupedTasks).sort(), [groupedTasks])
+  const isTaskModalOpen = showAddModal || Boolean(editingTask)
 
   useEffect(() => {
     if (courseFilter !== normalizedCourseFilter) {
@@ -100,13 +142,51 @@ function TasksPage() {
       return
     }
     setSparkleTaskId(String(lastCreatedItem.id))
+    dispatch(clearLastCreatedItem())
     const timer = setTimeout(() => setSparkleTaskId(''), 1000)
     return () => clearTimeout(timer)
-  }, [lastCreatedItem])
+  }, [dispatch, lastCreatedItem])
 
   const triggerRefresh = () => {
     refetch()
     setRefreshKey((prev) => prev + 1)
+  }
+  const triggerCoursesRefresh = () => {
+    refetchCourses()
+    setCoursesRefreshKey((prev) => prev + 1)
+  }
+
+  const handleAddCourse = async (target = 'add') => {
+    const trimmedName = courseNameInput.trim()
+    if (!trimmedName) {
+      setCourseActionError('Course name is required.')
+      return
+    }
+
+    setCourseActionError('')
+    try {
+      setIsAddingCourse(true)
+      const response = await fetch(`${API_BASE_URL}/api/courses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedName }),
+      })
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}))
+        throw new Error(errorBody.message || 'Failed to add course')
+      }
+      if (target === 'edit') {
+        setEditTaskData((prev) => ({ ...prev, course: trimmedName }))
+      } else {
+        setAddTaskData((prev) => ({ ...prev, course: trimmedName }))
+      }
+      setCourseNameInput('')
+      triggerCoursesRefresh()
+    } catch (createError) {
+      setCourseActionError(createError.message)
+    } finally {
+      setIsAddingCourse(false)
+    }
   }
 
   const handleUpdateTask = async (taskId, updates) => {
@@ -144,12 +224,26 @@ function TasksPage() {
       setTaskMutationError('Task name is required.')
       return
     }
+    if (!addTaskData.course.trim() && courseNameInput.trim()) {
+      setTaskMutationError('You typed a new course name. Click "Add" to create/select it first.')
+      return
+    }
     if (!addTaskData.course.trim()) {
       setTaskMutationError('Course is required.')
       return
     }
     if (!addTaskData.dueDate) {
-      setTaskMutationError('Due day is required.')
+      setTaskMutationError('Due date is required.')
+      return
+    }
+    if (Number(addTaskData.studyDays) < 1) {
+      setTaskMutationError('Study days must be at least 1.')
+      return
+    }
+
+    const studyDaysError = validateStudyDays(addTaskData.dueDate, addTaskData.studyDays)
+    if (studyDaysError) {
+      setTaskMutationError(studyDaysError)
       return
     }
 
@@ -163,6 +257,7 @@ function TasksPage() {
           title: addTaskData.title.trim(),
           course: addTaskData.course.trim(),
           dueDate: new Date(addTaskData.dueDate).toISOString(),
+          studyDays: Number(addTaskData.studyDays) || 1,
           status: addTaskData.status,
           category: 'tasks',
           difficulty: 1,
@@ -191,6 +286,7 @@ function TasksPage() {
         title: '',
         course: '',
         dueDate: '',
+        studyDays: 1,
         status: 'not_started',
       })
       triggerRefresh()
@@ -202,11 +298,13 @@ function TasksPage() {
   }
 
   const openEditModal = (task) => {
+    setTaskMutationError('')
     setEditingTask(task)
     setEditTaskData({
       title: task.title || '',
       course: task.course || '',
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : '',
+      studyDays: Number(task.studyDays) > 0 ? Number(task.studyDays) : 1,
       status: task.status || 'not_started',
     })
   }
@@ -220,7 +318,21 @@ function TasksPage() {
     }
 
     if (!editTaskData.title.trim() || !editTaskData.course.trim() || !editTaskData.dueDate) {
+      if (!editTaskData.course.trim() && courseNameInput.trim()) {
+        setTaskMutationError('You typed a new course name. Click "Add" to create/select it first.')
+        return
+      }
       setTaskMutationError('Title, course, and due date are required.')
+      return
+    }
+    if (Number(editTaskData.studyDays) < 1) {
+      setTaskMutationError('Study days must be at least 1.')
+      return
+    }
+
+    const studyDaysError = validateStudyDays(editTaskData.dueDate, editTaskData.studyDays)
+    if (studyDaysError) {
+      setTaskMutationError(studyDaysError)
       return
     }
 
@@ -230,6 +342,7 @@ function TasksPage() {
         title: editTaskData.title.trim(),
         course: editTaskData.course.trim(),
         dueDate: new Date(editTaskData.dueDate).toISOString(),
+        studyDays: Number(editTaskData.studyDays) || 1,
         status: editTaskData.status,
       })
       setEditingTask(null)
@@ -290,7 +403,10 @@ function TasksPage() {
           />
           <button
             type="button"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setTaskMutationError('')
+              setShowAddModal(true)
+            }}
             className="rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#785845]"
           >
             Add Task
@@ -299,7 +415,13 @@ function TasksPage() {
       </div>
 
       {error ? <div className={getAlertClass('error', isDark)}>{error}</div> : null}
-      {taskMutationError ? <div className={getAlertClass('error', isDark)}>{taskMutationError}</div> : null}
+      {!isTaskModalOpen && taskMutationError ? (
+        <div className={getAlertClass('error', isDark)}>{taskMutationError}</div>
+      ) : null}
+      {coursesError ? <div className={getAlertClass('error', isDark)}>{coursesError}</div> : null}
+      {!isTaskModalOpen && courseActionError ? (
+        <div className={getAlertClass('error', isDark)}>{courseActionError}</div>
+      ) : null}
       {loading ? (
         <p className={`mt-6 text-sm ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>Loading tasks...</p>
       ) : null}
@@ -344,6 +466,7 @@ function TasksPage() {
                       <div>
                         <h4 className="font-semibold">{task.title}</h4>
                         <p className="text-sm">Due: {new Date(task.dueDate).toLocaleDateString()}</p>
+                        <p className="text-sm">Study days: {Number(task.studyDays) > 0 ? task.studyDays : 1}</p>
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -422,16 +545,23 @@ function TasksPage() {
       </AnimatePresence>
 
       {showAddModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-sm">
-          <div
-            className={`w-full max-w-md rounded-xl border p-6 ${
-              isDark
-                ? 'border-[#5a463b] bg-[#2d221d] text-[#f6ede6]'
-                : 'border-[#d9c7b8] bg-[#fffaf4] text-[#453434]'
-            }`}
-          >
-            <h3 className="text-xl font-semibold">Add Task</h3>
-            <form className="mt-4 space-y-3" onSubmit={handleCreateTask}>
+        <ModalPortal>
+          <div className="fixed inset-0 z-[160] flex items-start justify-center overflow-y-auto bg-black/35 p-4 backdrop-blur-sm sm:items-center sm:p-6">
+            <div
+              className={`my-4 w-full max-w-md rounded-xl border p-6 ${
+                isDark
+                  ? 'border-[#5a463b] bg-[#2d221d] text-[#f6ede6]'
+                  : 'border-[#d9c7b8] bg-[#fffaf4] text-[#453434]'
+              }`}
+            >
+              <h3 className="text-xl font-semibold">Add Task</h3>
+              {taskMutationError ? (
+                <div className={getAlertClass('error', isDark)}>{taskMutationError}</div>
+              ) : null}
+              {courseActionError ? (
+                <div className={getAlertClass('error', isDark)}>{courseActionError}</div>
+              ) : null}
+              <form className="mt-4 space-y-3" onSubmit={handleCreateTask}>
               <div>
                 <label className="mb-1 block text-sm font-medium">Task Name</label>
                 <input
@@ -450,13 +580,48 @@ function TasksPage() {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium">Course</label>
-                <input
-                  type="text"
+                <CustomDropdown
                   value={addTaskData.course}
-                  onChange={(event) =>
-                    setAddTaskData((prev) => ({ ...prev, course: event.target.value }))
+                  onChange={(nextCourse) =>
+                    setAddTaskData((prev) => ({ ...prev, course: nextCourse }))
                   }
-                  placeholder="e.g. Programming ReactJS"
+                  isDark={isDark}
+                  className="w-full"
+                  options={[
+                    { value: '', label: 'Select course' },
+                    ...availableCourses.map((course) => ({ value: course, label: course })),
+                  ]}
+                />
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    value={courseNameInput}
+                    onChange={(event) => setCourseNameInput(event.target.value)}
+                    placeholder="Add new course"
+                    className={`w-full rounded-md border px-3 py-2 ${
+                      isDark
+                        ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6]'
+                        : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434]'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddCourse('add')}
+                    disabled={isAddingCourse}
+                    className="rounded-md bg-[#8b6b57] px-3 py-2 text-xs font-medium text-white"
+                  >
+                    {isAddingCourse ? 'Adding...' : 'Add'}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">Due day</label>
+                <input
+                  type="date"
+                  value={addTaskData.dueDate}
+                  onChange={(event) =>
+                    setAddTaskData((prev) => ({ ...prev, dueDate: event.target.value }))
+                  }
                   className={`w-full rounded-md border px-3 py-2 ${
                     isDark
                       ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6]'
@@ -466,12 +631,13 @@ function TasksPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">Due day</label>
+                <label className="mb-1 block text-sm font-medium">Study Days Needed</label>
                 <input
-                  type="date"
-                  value={addTaskData.dueDate}
+                  type="number"
+                  min="1"
+                  value={addTaskData.studyDays}
                   onChange={(event) =>
-                    setAddTaskData((prev) => ({ ...prev, dueDate: event.target.value }))
+                    setAddTaskData((prev) => ({ ...prev, studyDays: Number(event.target.value) || 1 }))
                   }
                   className={`w-full rounded-md border px-3 py-2 ${
                     isDark
@@ -497,38 +663,49 @@ function TasksPage() {
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="rounded-md bg-[#6f5b50] px-4 py-2 text-sm font-medium text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={addTaskLoading}
-                  className="rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-white"
-                >
-                  {addTaskLoading ? 'Saving...' : 'Save Task'}
-                </button>
-              </div>
-            </form>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTaskMutationError('')
+                      setShowAddModal(false)
+                    }}
+                    className="rounded-md bg-[#6f5b50] px-4 py-2 text-sm font-medium text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={addTaskLoading}
+                    className="rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-white"
+                  >
+                    {addTaskLoading ? 'Saving...' : 'Save Task'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       ) : null}
 
       {editingTask ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-sm">
-          <div
-            className={`w-full max-w-md rounded-xl border p-6 ${
-              isDark
-                ? 'border-[#5a463b] bg-[#2d221d] text-[#f6ede6]'
-                : 'border-[#d9c7b8] bg-[#fffaf4] text-[#453434]'
-            }`}
-          >
-            <h3 className="text-xl font-semibold">Edit Task</h3>
-            <form className="mt-4 space-y-3" onSubmit={handleSaveEditedTask}>
+        <ModalPortal>
+          <div className="fixed inset-0 z-[160] flex items-start justify-center overflow-y-auto bg-black/35 p-4 backdrop-blur-sm sm:items-center sm:p-6">
+            <div
+              className={`my-4 w-full max-w-md rounded-xl border p-6 ${
+                isDark
+                  ? 'border-[#5a463b] bg-[#2d221d] text-[#f6ede6]'
+                  : 'border-[#d9c7b8] bg-[#fffaf4] text-[#453434]'
+              }`}
+            >
+              <h3 className="text-xl font-semibold">Edit Task</h3>
+              {taskMutationError ? (
+                <div className={getAlertClass('error', isDark)}>{taskMutationError}</div>
+              ) : null}
+              {courseActionError ? (
+                <div className={getAlertClass('error', isDark)}>{courseActionError}</div>
+              ) : null}
+              <form className="mt-4 space-y-3" onSubmit={handleSaveEditedTask}>
               <div>
                 <label className="mb-1 block text-sm font-medium">Task Name</label>
                 <input
@@ -547,11 +724,47 @@ function TasksPage() {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium">Course</label>
-                <input
-                  type="text"
+                <CustomDropdown
                   value={editTaskData.course}
+                  onChange={(nextCourse) =>
+                    setEditTaskData((prev) => ({ ...prev, course: nextCourse }))
+                  }
+                  isDark={isDark}
+                  className="w-full"
+                  options={[
+                    { value: '', label: 'Select course' },
+                    ...availableCourses.map((course) => ({ value: course, label: course })),
+                  ]}
+                />
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    value={courseNameInput}
+                    onChange={(event) => setCourseNameInput(event.target.value)}
+                    placeholder="Add new course"
+                    className={`w-full rounded-md border px-3 py-2 ${
+                      isDark
+                        ? 'border-[#6a5448] bg-[#2d221d] text-[#f6ede6]'
+                        : 'border-[#d2c0b1] bg-[#fffaf6] text-[#453434]'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddCourse('edit')}
+                    disabled={isAddingCourse}
+                    className="rounded-md bg-[#8b6b57] px-3 py-2 text-xs font-medium text-white"
+                  >
+                    {isAddingCourse ? 'Adding...' : 'Add'}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">Due Date</label>
+                <input
+                  type="datetime-local"
+                  value={editTaskData.dueDate}
                   onChange={(event) =>
-                    setEditTaskData((prev) => ({ ...prev, course: event.target.value }))
+                    setEditTaskData((prev) => ({ ...prev, dueDate: event.target.value }))
                   }
                   className={`w-full rounded-md border px-3 py-2 ${
                     isDark
@@ -562,12 +775,13 @@ function TasksPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">Due Date</label>
+                <label className="mb-1 block text-sm font-medium">Study Days Needed</label>
                 <input
-                  type="datetime-local"
-                  value={editTaskData.dueDate}
+                  type="number"
+                  min="1"
+                  value={editTaskData.studyDays}
                   onChange={(event) =>
-                    setEditTaskData((prev) => ({ ...prev, dueDate: event.target.value }))
+                    setEditTaskData((prev) => ({ ...prev, studyDays: Number(event.target.value) || 1 }))
                   }
                   className={`w-full rounded-md border px-3 py-2 ${
                     isDark
@@ -592,25 +806,29 @@ function TasksPage() {
                   }))}
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingTask(null)}
-                  className="rounded-md bg-[#6f5b50] px-4 py-2 text-sm font-medium text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={editTaskLoading}
-                  className="rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-white"
-                >
-                  {editTaskLoading ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTaskMutationError('')
+                      setEditingTask(null)
+                    }}
+                    className="rounded-md bg-[#6f5b50] px-4 py-2 text-sm font-medium text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editTaskLoading}
+                    className="rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-white"
+                  >
+                    {editTaskLoading ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       ) : null}
     </section>
   )

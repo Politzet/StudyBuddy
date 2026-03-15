@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import Calendar from 'react-calendar'
-import 'react-calendar/dist/Calendar.css'
 import { useDispatch, useSelector } from 'react-redux'
 import Breadcrumbs from '../components/Breadcrumbs'
 import CreationSparkle from '../components/CreationSparkle'
 import CustomDropdown from '../components/CustomDropdown'
-import FormCard from '../components/FormCard'
+import ModalPortal from '../components/ModalPortal'
 import { useTheme } from '../context/ThemeContext'
 import useFetch from '../hooks/useFetch'
 import { API_BASE_URL } from '../config/api'
-import { markItemCreated, setSelectedCategory } from '../store/dashboardSlice'
+import { clearLastCreatedItem, markItemCreated, setSelectedCategory } from '../store/dashboardSlice'
 import { getAlertClass } from '../styles/alertStyles'
 import { getFormInputClass } from '../styles/formStyles'
 
@@ -17,19 +15,9 @@ const initialForm = {
   course: '',
   date: '',
   time: '',
+  studyDays: 1,
   building: '',
   room: '',
-}
-
-const normalizeDate = (value) => {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return ''
-  }
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
 }
 
 function ExamsPage() {
@@ -44,9 +32,38 @@ function ExamsPage() {
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
-  const [selectedDay, setSelectedDay] = useState(() => new Date())
   const [courseFilter, setCourseFilter] = useState('all')
   const [sparkleExamId, setSparkleExamId] = useState('')
+  const [showExamModal, setShowExamModal] = useState(false)
+  const [courseActionError, setCourseActionError] = useState('')
+  const [courseNameInput, setCourseNameInput] = useState('')
+  const [isAddingCourse, setIsAddingCourse] = useState(false)
+  const [coursesRefreshKey, setCoursesRefreshKey] = useState(0)
+
+  const validateStudyDays = (dateValue, studyDaysValue) => {
+    const examDate = new Date(dateValue)
+    if (Number.isNaN(examDate.getTime())) {
+      return 'Please select a valid exam date.'
+    }
+
+    const examDayEnd = new Date(examDate)
+    examDayEnd.setHours(23, 59, 59, 999)
+
+    const now = new Date()
+    const msPerDay = 1000 * 60 * 60 * 24
+    const daysLeft = Math.ceil((examDayEnd.getTime() - now.getTime()) / msPerDay)
+
+    if (daysLeft <= 0) {
+      return 'Exam date must be in the future.'
+    }
+
+    const normalizedStudyDays = Number(studyDaysValue) || 1
+    if (normalizedStudyDays > daysLeft) {
+      return `You entered ${normalizedStudyDays} study days, but only ${daysLeft} day(s) are left until the exam date.`
+    }
+
+    return ''
+  }
 
   useEffect(() => {
     dispatch(setSelectedCategory('exams'))
@@ -55,12 +72,21 @@ function ExamsPage() {
   const { data, loading, error, refetch } = useFetch(
     `${API_BASE_URL}/api/exams?userId=${encodeURIComponent(userId)}&r=${refreshKey}`,
   )
+  const {
+    data: coursesData,
+    error: coursesError,
+    refetch: refetchCourses,
+  } = useFetch(`${API_BASE_URL}/api/courses?r=${coursesRefreshKey}`)
   const { data: moodleData } = useFetch(`${API_BASE_URL}/api/moodle/sync`)
 
   const exams = useMemo(() => (Array.isArray(data) ? data : []), [data])
   const moodleExams = useMemo(
     () => (Array.isArray(moodleData?.exams) ? moodleData.exams : []),
     [moodleData],
+  )
+  const availableCourses = useMemo(
+    () => (Array.isArray(coursesData) ? coursesData.map((course) => course.name).filter(Boolean).sort() : []),
+    [coursesData],
   )
   const allExams = useMemo(() => {
     const imported = exams.map((exam) => ({
@@ -81,13 +107,13 @@ function ExamsPage() {
   )
   const normalizedCourseFilter =
     courseFilter === 'all' || courses.includes(courseFilter) ? courseFilter : 'all'
-  const visibleExams = useMemo(
-    () =>
+  const visibleExams = useMemo(() => {
+    const base =
       normalizedCourseFilter === 'all'
         ? allExams
-        : allExams.filter((exam) => exam.course === normalizedCourseFilter),
-    [allExams, normalizedCourseFilter],
-  )
+        : allExams.filter((exam) => exam.course === normalizedCourseFilter)
+    return [...base].sort((a, b) => new Date(a.date) - new Date(b.date))
+  }, [allExams, normalizedCourseFilter])
   const groupedExams = useMemo(() => {
     return visibleExams.reduce((acc, exam) => {
       const courseName = exam.course || 'Unassigned Course'
@@ -99,28 +125,78 @@ function ExamsPage() {
     }, {})
   }, [visibleExams])
   const groupedCourses = useMemo(() => Object.keys(groupedExams).sort(), [groupedExams])
-
-  const selectedDateIso = normalizeDate(selectedDay)
-  const examDateSet = useMemo(
-    () => new Set(allExams.map((exam) => normalizeDate(exam.date)).filter(Boolean)),
-    [allExams],
-  )
-  const selectedDateExams = allExams.filter(
-    (exam) => normalizeDate(exam.date) === selectedDateIso,
-  )
+  const isExamModalOpen = showExamModal
 
   useEffect(() => {
     if (!lastCreatedItem || lastCreatedItem.category !== 'exams' || !lastCreatedItem.id) {
       return
     }
     setSparkleExamId(String(lastCreatedItem.id))
+    dispatch(clearLastCreatedItem())
     const timer = setTimeout(() => setSparkleExamId(''), 1000)
     return () => clearTimeout(timer)
-  }, [lastCreatedItem])
+  }, [dispatch, lastCreatedItem])
 
   const triggerRefresh = () => {
     refetch()
     setRefreshKey((prev) => prev + 1)
+  }
+  const triggerCoursesRefresh = () => {
+    refetchCourses()
+    setCoursesRefreshKey((prev) => prev + 1)
+  }
+
+  const openAddModal = () => {
+    setEditingId('')
+    setFormData(initialForm)
+    setShowExamModal(true)
+    setErrorMessage('')
+    setCourseActionError('')
+    setMessage('')
+  }
+
+  const handleAddCourse = async () => {
+    const trimmedName = courseNameInput.trim()
+    if (!trimmedName) {
+      setCourseActionError('Course name is required.')
+      return
+    }
+    setCourseActionError('')
+    try {
+      setIsAddingCourse(true)
+      const response = await fetch(`${API_BASE_URL}/api/courses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedName }),
+      })
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}))
+        throw new Error(errorBody.message || 'Failed to add course')
+      }
+      setFormData((prev) => ({ ...prev, course: trimmedName }))
+      setCourseNameInput('')
+      triggerCoursesRefresh()
+    } catch (createError) {
+      setCourseActionError(createError.message)
+    } finally {
+      setIsAddingCourse(false)
+    }
+  }
+
+  const startEdit = (exam) => {
+    setErrorMessage('')
+    setCourseActionError('')
+    setEditingId(exam._id)
+    setFormData({
+      course: exam.course,
+      date: new Date(exam.date).toISOString().slice(0, 10),
+      time: exam.time || '',
+      studyDays: Number(exam.studyDays) > 0 ? Number(exam.studyDays) : 1,
+      building: exam.location?.building || '',
+      room: exam.location?.room || '',
+    })
+    setShowExamModal(true)
+    setMessage('')
   }
 
   const handleSubmit = async (event) => {
@@ -128,20 +204,35 @@ function ExamsPage() {
     setMessage('')
     setErrorMessage('')
 
-    if (!formData.date || !formData.time) {
-      setErrorMessage('Date and time are required for exams.')
+    if (!formData.course.trim() && courseNameInput.trim()) {
+      setErrorMessage('You typed a new course name. Click "Add" to create/select it first.')
+      return
+    }
+    if (!formData.course.trim() || !formData.date || !formData.time) {
+      setErrorMessage('Course, date, and time are required for exams.')
+      return
+    }
+    if (Number(formData.studyDays) < 1) {
+      setErrorMessage('Study days must be at least 1.')
+      return
+    }
+
+    const studyDaysError = validateStudyDays(formData.date, formData.studyDays)
+    if (studyDaysError) {
+      setErrorMessage(studyDaysError)
       return
     }
 
     try {
       const payload = {
         userId,
-        course: formData.course,
+        course: formData.course.trim(),
         date: formData.date,
         time: formData.time,
+        studyDays: Number(formData.studyDays) || 1,
         location: {
-          building: formData.building,
-          room: formData.room,
+          building: formData.building.trim(),
+          room: formData.room.trim(),
         },
       }
 
@@ -175,22 +266,12 @@ function ExamsPage() {
 
       setFormData(initialForm)
       setEditingId('')
+      setShowExamModal(false)
       setMessage(editingId ? 'Exam updated successfully.' : 'Exam created successfully.')
       triggerRefresh()
     } catch (submitError) {
       setErrorMessage(submitError.message)
     }
-  }
-
-  const startEdit = (exam) => {
-    setEditingId(exam._id)
-    setFormData({
-      course: exam.course,
-      date: new Date(exam.date).toISOString().slice(0, 10),
-      time: exam.time || '',
-      building: exam.location?.building || '',
-      room: exam.location?.room || '',
-    })
   }
 
   const handleDelete = async (id) => {
@@ -218,206 +299,220 @@ function ExamsPage() {
       }`}
     >
       <Breadcrumbs isDark={isDark} />
-      <h2 className="text-2xl font-bold">Exams</h2>
-      <div className="mt-3 flex items-center gap-3">
-        <label className="text-xs font-medium">Filter by course:</label>
-        <CustomDropdown
-          value={normalizedCourseFilter}
-          onChange={setCourseFilter}
-          isDark={isDark}
-          className="min-w-[180px]"
-          options={[
-            { value: 'all', label: 'All courses' },
-            ...courses.map((course) => ({ value: course, label: course })),
-          ]}
-        />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-2xl font-bold">Exams</h2>
+        <div className="flex items-center gap-2">
+          <CustomDropdown
+            value={normalizedCourseFilter}
+            onChange={setCourseFilter}
+            isDark={isDark}
+            className="min-w-[180px]"
+            options={[
+              { value: 'all', label: 'All courses' },
+              ...courses.map((course) => ({ value: course, label: course })),
+            ]}
+          />
+          <button
+            type="button"
+            onClick={openAddModal}
+            className="rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#785845]"
+          >
+            Add Exam
+          </button>
+        </div>
       </div>
 
       {error ? <div className={getAlertClass('error', isDark)}>{error}</div> : null}
-      {errorMessage ? <div className={getAlertClass('error', isDark)}>{errorMessage}</div> : null}
+      {!isExamModalOpen && errorMessage ? (
+        <div className={getAlertClass('error', isDark)}>{errorMessage}</div>
+      ) : null}
       {message ? <div className={getAlertClass('success', isDark)}>{message}</div> : null}
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div
-          className={`academy-card p-4 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
-        >
-          <Calendar
-            onChange={setSelectedDay}
-            value={selectedDay}
-            className={`academy-calendar ${isDark ? 'academy-calendar-dark' : 'academy-calendar-light'}`}
-            tileClassName={({ date, view }) => {
-              if (view === 'month' && examDateSet.has(normalizeDate(date))) {
-                return 'academy-calendar-has-exam'
-              }
-              return null
-            }}
-            tileContent={({ date, view }) =>
-              view === 'month' && examDateSet.has(normalizeDate(date)) ? (
-                <span className="academy-calendar-exam-dot" />
-              ) : null
-            }
-          />
-
-          <div className="mt-4">
-            <h3 className="text-base font-semibold">Exams on {selectedDay.toLocaleDateString()}</h3>
-            {selectedDateExams.length === 0 ? (
-              <p className={`mt-2 text-sm ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
-                No exams on this date.
-              </p>
-            ) : (
-              <ul className="mt-2 space-y-2">
-                {selectedDateExams.map((exam) => (
-                  <li
-                    key={exam._id}
-                    className={`rounded-md border p-3 ${
-                      isDark
-                        ? 'border-[#5f4a3f] bg-[#2f241f]/90'
-                        : 'border-[#d9c7b8] bg-[#fffaf4]/95'
-                    }`}
-                  >
-                    <p className="font-medium">{exam.course}</p>
-                    <p className="text-sm">Time: {exam.time}</p>
-                    <p className="text-sm">
-                      Location: {exam.location?.building} / {exam.location?.room}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        <FormCard
-          isDark={isDark}
-          onSubmit={handleSubmit}
-          className="mt-0"
-          title={editingId ? 'Edit Exam' : 'Add Exam'}
-          actions={
-            <>
-              <button
-                type="submit"
-                className="rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-white"
-              >
-                {editingId ? 'Update Exam' : 'Add Exam'}
-              </button>
-              {editingId ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingId('')
-                    setFormData(initialForm)
-                  }}
-                  className="rounded-md bg-[#6f5b50] px-4 py-2 text-sm font-medium text-white"
-                >
-                  Cancel
-                </button>
-              ) : null}
-            </>
-          }
-        >
-          <div className="grid gap-3">
-            <input
-              type="text"
-              placeholder="Course"
-              value={formData.course}
-              onChange={(event) => setFormData((prev) => ({ ...prev, course: event.target.value }))}
-              className={getFormInputClass(isDark)}
-              required
-            />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(event) => setFormData((prev) => ({ ...prev, date: event.target.value }))}
-                className={getFormInputClass(isDark)}
-                required
-              />
-              <input
-                type="time"
-                value={formData.time}
-                onChange={(event) => setFormData((prev) => ({ ...prev, time: event.target.value }))}
-                className={getFormInputClass(isDark)}
-                required
-              />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input
-                type="text"
-                placeholder="Building"
-                value={formData.building}
-                onChange={(event) => setFormData((prev) => ({ ...prev, building: event.target.value }))}
-                className={getFormInputClass(isDark)}
-                required
-              />
-              <input
-                type="text"
-                placeholder="Room"
-                value={formData.room}
-                onChange={(event) => setFormData((prev) => ({ ...prev, room: event.target.value }))}
-                className={getFormInputClass(isDark)}
-                required
-              />
-            </div>
-          </div>
-        </FormCard>
-      </div>
+      {coursesError ? <div className={getAlertClass('error', isDark)}>{coursesError}</div> : null}
+      {!isExamModalOpen && courseActionError ? (
+        <div className={getAlertClass('error', isDark)}>{courseActionError}</div>
+      ) : null}
 
       {loading ? (
-        <p className={`mt-4 text-sm ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
+        <p className={`mt-6 text-sm ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
           Loading exams...
         </p>
       ) : null}
 
-      <div className="mt-6 space-y-4">
-        {groupedCourses.map((courseName) => (
-          <div
-            key={courseName}
-            className={`academy-card p-4 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
-          >
-            <h3 className="mb-3 text-sm font-semibold">{courseName}</h3>
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {groupedExams[courseName].map((exam) => (
-                <li
-                  key={exam.id}
-                  className={`academy-card relative overflow-visible p-4 ${
-                    isDark ? 'academy-card-dark' : 'academy-card-light'
-                  }`}
+      {!loading && !error && visibleExams.length === 0 ? (
+        <p className={`mt-6 text-sm ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
+          No exams found for this filter.
+        </p>
+      ) : null}
+
+      {!loading && !error && visibleExams.length > 0 ? (
+        <div className="mt-6 space-y-4">
+          {groupedCourses.map((courseName) => (
+            <div
+              key={courseName}
+              className={`academy-card p-4 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
+            >
+              <h3 className="mb-3 text-sm font-semibold">{courseName}</h3>
+              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {groupedExams[courseName].map((exam) => (
+                  <li
+                    key={exam.id}
+                    className={`academy-card relative overflow-visible p-4 ${
+                      isDark ? 'academy-card-dark' : 'academy-card-light'
+                    }`}
+                  >
+                    {sparkleExamId === String(exam.id) && exam.source === 'db' ? (
+                      <CreationSparkle />
+                    ) : null}
+                    <p className="font-semibold">{new Date(exam.date).toLocaleDateString()}</p>
+                    <p className="text-sm">Time: {exam.time}</p>
+                    <p className="text-sm">
+                      Study days: {Number(exam.studyDays) > 0 ? exam.studyDays : 1}
+                    </p>
+                    <p className="text-sm">
+                      Location: {exam.location?.building || '—'} / {exam.location?.room || '—'}
+                    </p>
+                    {exam.source === 'db' ? (
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(exam)}
+                          className="rounded-md bg-[#b38763] px-3 py-1.5 text-xs font-medium text-white"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(exam._id)}
+                          className="rounded-md bg-[#6f3f3f] px-3 py-1.5 text-xs font-medium text-white"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-xs">Source: Moodle schedule</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {showExamModal ? (
+        <ModalPortal>
+          <div className="fixed inset-0 z-[160] flex items-start justify-center overflow-y-auto bg-black/35 p-4 backdrop-blur-sm sm:items-center sm:p-6">
+            <div
+              className={`my-4 w-full max-w-md rounded-xl border p-6 ${
+                isDark
+                  ? 'border-[#5a463b] bg-[#2d221d] text-[#f6ede6]'
+                  : 'border-[#d9c7b8] bg-[#fffaf4] text-[#453434]'
+              }`}
+            >
+              <h3 className="text-xl font-semibold">{editingId ? 'Edit Exam' : 'Add Exam'}</h3>
+              {errorMessage ? <div className={getAlertClass('error', isDark)}>{errorMessage}</div> : null}
+              {courseActionError ? (
+                <div className={getAlertClass('error', isDark)}>{courseActionError}</div>
+              ) : null}
+              <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
+              <CustomDropdown
+                value={formData.course}
+                onChange={(nextCourse) => setFormData((prev) => ({ ...prev, course: nextCourse }))}
+                isDark={isDark}
+                className="w-full"
+                options={[
+                  { value: '', label: 'Select course' },
+                  ...availableCourses.map((course) => ({ value: course, label: course })),
+                ]}
+              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={courseNameInput}
+                  onChange={(event) => setCourseNameInput(event.target.value)}
+                  placeholder="Add new course"
+                  className={getFormInputClass(isDark)}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCourse}
+                  disabled={isAddingCourse}
+                  className="rounded-md bg-[#8b6b57] px-3 py-2 text-xs font-medium text-white"
                 >
-                  {sparkleExamId === String(exam.id) && exam.source === 'db' ? (
-                    <CreationSparkle />
-                  ) : null}
-                  <p className="text-sm">
-                    {new Date(exam.date).toLocaleDateString()} at {exam.time}
-                  </p>
-                  <p className="text-sm">
-                    {exam.location?.building} / {exam.location?.room}
-                  </p>
-                  {exam.source === 'db' ? (
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(exam)}
-                        className="rounded-md bg-[#b38763] px-3 py-1.5 text-xs font-medium text-white"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(exam._id)}
-                        className="rounded-md bg-[#6f3f3f] px-3 py-1.5 text-xs font-medium text-white"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-xs">Source: Moodle schedule</p>
-                  )}
-                </li>
-              ))}
-            </ul>
+                  {isAddingCourse ? 'Adding...' : 'Add'}
+                </button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, date: event.target.value }))}
+                  className={getFormInputClass(isDark)}
+                  required
+                />
+                <input
+                  type="time"
+                  value={formData.time}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, time: event.target.value }))}
+                  className={getFormInputClass(isDark)}
+                  required
+                />
+              </div>
+              <input
+                type="number"
+                min="1"
+                value={formData.studyDays}
+                onChange={(event) =>
+                  setFormData((prev) => ({ ...prev, studyDays: Number(event.target.value) || 1 }))
+                }
+                placeholder="Study days needed"
+                className={getFormInputClass(isDark)}
+                required
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input
+                  type="text"
+                  placeholder="Building"
+                  value={formData.building}
+                  onChange={(event) =>
+                    setFormData((prev) => ({ ...prev, building: event.target.value }))
+                  }
+                  className={getFormInputClass(isDark)}
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Room"
+                  value={formData.room}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, room: event.target.value }))}
+                  className={getFormInputClass(isDark)}
+                  required
+                />
+              </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setErrorMessage('')
+                      setCourseActionError('')
+                      setShowExamModal(false)
+                    }}
+                    className="rounded-md bg-[#6f5b50] px-4 py-2 text-sm font-medium text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-white"
+                  >
+                    {editingId ? 'Save Changes' : 'Save Exam'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        ))}
-      </div>
+        </ModalPortal>
+      ) : null}
     </section>
   )
 }

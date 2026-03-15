@@ -16,16 +16,18 @@ const SPARKLE_PARTICLES = [
 ]
 
 function CreationSparkle() {
+  const MotionDiv = motion.div
+  const MotionSpan = motion.span
   return (
     <div className="pointer-events-none absolute inset-0 z-20 overflow-visible">
-      <motion.div
+      <MotionDiv
         initial={{ opacity: 0, scale: 0.4 }}
         animate={{ opacity: [0, 0.45, 0], scale: [0.4, 1.06, 1.25] }}
         transition={{ duration: 0.95, ease: 'easeOut' }}
         className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e7ba58]/70 bg-[#f5d37a]/20"
       />
       {SPARKLE_PARTICLES.map((particle, index) => (
-        <motion.span
+        <MotionSpan
           key={`${particle.x}-${particle.y}-${index}`}
           initial={{ opacity: 0, x: 0, y: 0, scale: 0.15, rotate: 0 }}
           animate={{

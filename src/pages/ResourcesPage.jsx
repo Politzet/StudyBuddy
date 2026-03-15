@@ -5,6 +5,7 @@ import useFetch from '../hooks/useFetch'
 import { API_BASE_URL } from '../config/api'
 import { useTheme } from '../context/ThemeContext'
 import { getAlertActionClass, getAlertClass } from '../styles/alertStyles'
+import { cleanSearchQuery } from '../utils/searchUtils'
 
 const YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search'
 
@@ -73,14 +74,26 @@ function ResourcesPage() {
       ? selectedAssignment
       : assignmentOptions[0].title
 
+  const cleanedAssignment = useMemo(
+    () => cleanSearchQuery(effectiveAssignment),
+    [effectiveAssignment],
+  )
+
   const strictQuery = useMemo(() => {
-    if (!effectiveCourse || !effectiveAssignment) {
+    if (!effectiveCourse || !cleanedAssignment) {
       return ''
     }
-    return `${effectiveCourse} ${effectiveAssignment} tutorial`
-  }, [effectiveCourse, effectiveAssignment])
+    return `${effectiveCourse} ${cleanedAssignment} tutorial`
+  }, [effectiveCourse, cleanedAssignment])
 
-  const youtubeUrl = useMemo(() => {
+  const fallbackQuery = useMemo(() => {
+    if (!cleanedAssignment) {
+      return ''
+    }
+    return `${cleanedAssignment} tutorial`
+  }, [cleanedAssignment])
+
+  const primaryYoutubeUrl = useMemo(() => {
     if (!youtubeApiKey || !strictQuery) {
       return ''
     }
@@ -95,10 +108,14 @@ function ResourcesPage() {
     return `${YOUTUBE_SEARCH_URL}?${queryParams.toString()}`
   }, [youtubeApiKey, strictQuery, refreshSeed])
 
-  const { data: youtubeData, loading, error } = useFetch(youtubeUrl)
+  const {
+    data: primaryYoutubeData,
+    loading: primaryLoading,
+    error: primaryError,
+  } = useFetch(primaryYoutubeUrl)
 
-  const videos = useMemo(() => {
-    const items = Array.isArray(youtubeData?.items) ? youtubeData.items : []
+  const primaryVideos = useMemo(() => {
+    const items = Array.isArray(primaryYoutubeData?.items) ? primaryYoutubeData.items : []
     return items
       .filter((item) => item?.id?.videoId)
       .map((item) => ({
@@ -111,7 +128,60 @@ function ResourcesPage() {
           item.snippet?.thumbnails?.default?.url ||
           '',
       }))
-  }, [youtubeData])
+  }, [primaryYoutubeData])
+
+  const shouldUseFallback = useMemo(() => {
+    return (
+      Boolean(youtubeApiKey) &&
+      Boolean(strictQuery) &&
+      Boolean(fallbackQuery) &&
+      !primaryLoading &&
+      !primaryError &&
+      primaryVideos.length === 0
+    )
+  }, [youtubeApiKey, strictQuery, fallbackQuery, primaryLoading, primaryError, primaryVideos.length])
+
+  const fallbackYoutubeUrl = useMemo(() => {
+    if (!shouldUseFallback) {
+      return ''
+    }
+    const queryParams = new URLSearchParams({
+      part: 'snippet',
+      maxResults: '12',
+      q: fallbackQuery,
+      type: 'video',
+      key: youtubeApiKey,
+      strict: `${refreshSeed}-fallback`,
+    })
+    return `${YOUTUBE_SEARCH_URL}?${queryParams.toString()}`
+  }, [shouldUseFallback, fallbackQuery, youtubeApiKey, refreshSeed])
+
+  const {
+    data: fallbackYoutubeData,
+    loading: fallbackLoading,
+    error: fallbackError,
+  } = useFetch(fallbackYoutubeUrl)
+
+  const fallbackVideos = useMemo(() => {
+    const items = Array.isArray(fallbackYoutubeData?.items) ? fallbackYoutubeData.items : []
+    return items
+      .filter((item) => item?.id?.videoId)
+      .map((item) => ({
+        id: item.id.videoId,
+        title: item.snippet?.title || 'Untitled video',
+        channelTitle: item.snippet?.channelTitle || 'Unknown channel',
+        thumbnail:
+          item.snippet?.thumbnails?.high?.url ||
+          item.snippet?.thumbnails?.medium?.url ||
+          item.snippet?.thumbnails?.default?.url ||
+          '',
+      }))
+  }, [fallbackYoutubeData])
+
+  const videos = shouldUseFallback ? fallbackVideos : primaryVideos
+  const loading = primaryLoading || fallbackLoading
+  const error = primaryError || fallbackError
+  const displayedQuery = shouldUseFallback ? fallbackQuery : strictQuery
 
   const [favoritesRefresh, setFavoritesRefresh] = useState(0)
   const [favoritesError, setFavoritesError] = useState('')
@@ -162,7 +232,7 @@ function ResourcesPage() {
           thumbnail: video.thumbnail,
           youtubeUrl: `https://www.youtube.com/watch?v=${video.id}`,
           course: effectiveCourse,
-          assignmentName: effectiveAssignment,
+          assignmentName: cleanedAssignment || effectiveAssignment,
           personalNote: note,
         }),
       })
@@ -326,7 +396,8 @@ function ResourcesPage() {
       </div>
 
       <p className={`mt-2 text-xs ${isDark ? 'text-[#d7c3b4]' : 'text-[#7c6558]'}`}>
-        Query: {strictQuery || 'Select a course and assignment'}
+        Query: {displayedQuery || 'Select a course and assignment'}
+        {shouldUseFallback ? ' (fallback: task only)' : ''}
       </p>
 
       {error ? (
@@ -362,7 +433,7 @@ function ResourcesPage() {
         </div>
       ) : null}
 
-      {!loading && !error && strictQuery && viewFilter === 'all' ? (
+      {!loading && !error && displayedQuery && viewFilter === 'all' ? (
         <ul className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {videos.map((video) => (
             <li

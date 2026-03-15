@@ -21,6 +21,11 @@ const examSchema = new mongoose.Schema(
       required: [true, 'Exam time is required'],
       trim: true,
     },
+    studyDays: {
+      type: Number,
+      min: [1, 'Study days must be at least 1'],
+      default: 1,
+    },
     location: {
       building: {
         type: String,
