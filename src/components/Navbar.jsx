@@ -5,14 +5,14 @@ import { useTheme } from '../context/ThemeContext'
 import { logout } from '../store/userSlice'
 
 const navClassName = (isDark) => ({ isActive }) =>
-  `academy-btn rounded-md px-3 py-2 text-sm font-medium transition ${
+  `px-2 py-1 text-sm font-semibold transition border-b-2 border-transparent ${
     isActive
       ? isDark
-        ? 'bg-[#8b6b57] text-[#f3e6cf]'
-        : 'bg-[#8b6b57] text-[#f3e6cf]'
+        ? 'rounded-md border border-[#8b6a4d]/70 bg-[#4b372c]/80 text-[#f3e6cf] shadow-[0_3px_10px_rgba(0,0,0,0.28)]'
+        : 'rounded-md border border-[#c5ae98]/80 bg-[#f2e6d9]/88 text-[#4a352a] shadow-[0_3px_10px_rgba(108,74,49,0.18)]'
       : isDark
-        ? 'bg-[#3a2d26]/90 text-[#f1dfb3] hover:bg-[#4a382f]'
-        : 'bg-[#f4eae0] text-[#2a3748] hover:bg-[#f1e2d5]'
+        ? 'text-[#f1dfb3] hover:text-[#ffe9c9] hover:border-[#d7ba86]/70'
+        : 'text-[#3f3127] hover:text-[#2e2219] hover:border-[#b99474]/70'
   }`
 
 function Navbar() {
@@ -57,10 +57,10 @@ function Navbar() {
 
   return (
     <header
-      className={`relative z-50 border-b backdrop-blur-sm ${
+      className={`relative z-50 border-b backdrop-blur-md ${
         isDark
-          ? 'border-[#5a463b] bg-[#2d221d]/90 text-[#f6ede6]'
-          : 'border-[#d7c5b7] bg-[#fff8f1]/90 text-[#453434]'
+          ? 'border-[#5a463b]/45 bg-[#2d221d]/12 text-[#f6ede6]'
+          : 'border-[#d7c5b7]/50 bg-[#fff8f1]/12 text-[#453434]'
       }`}
     >
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4">
@@ -74,12 +74,14 @@ function Navbar() {
               onClick={() => setIsHomeMenuOpen((prev) => !prev)}
               aria-expanded={isHomeMenuOpen}
               aria-haspopup="menu"
-              className={`academy-btn rounded-md px-3 py-2 text-sm font-medium transition ${
+              className={`px-2 py-1 text-sm font-semibold transition border-b-2 border-transparent ${
                 isHomeMenuActive
-                  ? 'bg-[#8b6b57] text-[#f3e6cf]'
+                  ? isDark
+                    ? 'rounded-md border border-[#8b6a4d]/70 bg-[#4b372c]/80 text-[#f3e6cf] shadow-[0_3px_10px_rgba(0,0,0,0.28)]'
+                    : 'rounded-md border border-[#c5ae98]/80 bg-[#f2e6d9]/88 text-[#4a352a] shadow-[0_3px_10px_rgba(108,74,49,0.18)]'
                   : isDark
-                    ? 'bg-[#3a2d26]/90 text-[#f1dfb3] hover:bg-[#4a382f]'
-                    : 'bg-[#f4eae0] text-[#2a3748] hover:bg-[#f1e2d5]'
+                    ? 'text-[#f1dfb3] hover:text-[#ffe9c9] hover:border-[#d7ba86]/70'
+                    : 'text-[#3f3127] hover:text-[#2e2219] hover:border-[#b99474]/70'
               }`}
             >
               Home ▾
@@ -122,7 +124,11 @@ function Navbar() {
           <button
             type="button"
             onClick={toggleTheme}
-            className="academy-btn academy-spell-toggle rounded-md px-3 py-2 text-sm font-medium transition"
+            className={`px-2 py-1 text-sm font-semibold transition border-b-2 border-transparent ${
+              isDark
+                ? 'text-[#f1dfb3] hover:text-[#ffe9c9] hover:border-[#d7ba86]/70'
+                : 'text-[#3f3127] hover:text-[#2e2219] hover:border-[#b99474]/70'
+            }`}
           >
             {isDark ? 'Lumos' : 'Nox'}
           </button>
@@ -133,7 +139,7 @@ function Navbar() {
             <button
               type="button"
               onClick={handleLogout}
-              className="academy-btn rounded-md bg-[#6f3f3f] px-3 py-2 text-sm font-medium text-[#f3e6cf] transition hover:bg-[#5d3434]"
+              className="px-2 py-1 text-sm font-semibold text-[#7c2d2d] transition hover:border-b-2 hover:border-[#7c2d2d]/70 hover:text-[#5f1f1f]"
             >
               Logout
             </button>

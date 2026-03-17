@@ -115,16 +115,16 @@ function LogonPage() {
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4">
         <div
-          className={`w-full max-w-lg rounded-2xl bg-white/45 p-8 backdrop-blur-sm transition-opacity duration-500 ${
+          className={`w-full max-w-lg p-8 transition-opacity duration-500 ${
             fadeFormAway ? 'opacity-0' : 'opacity-100'
           }`}
         >
-          <div className="mb-8 flex justify-center">
+          <div className="mb-4 flex justify-center">
             <img
               src={logoCandidates[logoIndex]}
               onError={handleLogoError}
               alt="StudyBuddy logo"
-              className="max-h-44 w-auto"
+              className="max-h-52 w-auto"
             />
           </div>
 
@@ -134,45 +134,35 @@ function LogonPage() {
             </div>
           ) : null}
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label
-                htmlFor="logon-email"
-                className="mb-2 block text-3/4 font-semibold text-[#453434]"
-              >
-                Email:
-              </label>
+          <form className="space-y-3" onSubmit={handleSubmit}>
+            <div className="mx-auto w-full max-w-[400px]">
               <input
                 id="logon-email"
                 type="email"
+                placeholder="Email Address"
                 value={email}
                 onChange={(event) => {
                   setEmail(event.target.value)
                   setEmailError('')
                 }}
-                className="w-full rounded-full bg-white/75 px-4 py-2 text-[#453434] outline-none ring-1 ring-white/60 focus:ring-2 focus:ring-[#453434]/40"
+                className="w-full rounded-md border border-[#d4af37]/40 bg-[#f7efe4]/85 px-4 py-2.5 text-[#453434] outline-none placeholder:text-[rgba(101,84,71,0.6)] focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/25"
                 required
               />
               {emailError ? <p className="mt-1 text-sm text-red-700">{emailError}</p> : null}
             </div>
-            <div>
-              <label
-                htmlFor="logon-password"
-                className="mb-2 block text-3/4 font-semibold text-[#453434]"
-              >
-                Password:
-              </label>
+            <div className="mx-auto w-full max-w-[400px]">
               <input
                 id="logon-password"
                 type="password"
+                placeholder="Password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-full bg-white/75 px-4 py-2 text-[#453434] outline-none ring-1 ring-white/60 focus:ring-2 focus:ring-[#453434]/40"
+                className="w-full rounded-md border border-[#d4af37]/40 bg-[#f7efe4]/85 px-4 py-2.5 text-[#453434] outline-none placeholder:text-[rgba(101,84,71,0.6)] focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/25"
                 required
               />
             </div>
 
-            <div className="pt-2 text-center">
+            <div className="pt-1 text-center">
               <button
                 type="submit"
                 disabled={auth.isLoading}
@@ -183,7 +173,7 @@ function LogonPage() {
             </div>
           </form>
 
-          <p className="mt-6 text-center text-[#453434]">
+          <p className="mt-5 text-center text-[#453434]">
             Don&apos;t have an account yet?{' '}
             <Link to="/register" className="font-semibold underline">
               Register here

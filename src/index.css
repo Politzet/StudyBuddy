@@ -9,6 +9,14 @@ body {
   transition: background-color 300ms ease, color 300ms ease;
 }
 
+html,
+body,
+*,
+*::before,
+*::after {
+  cursor: url('/images/wand.svg') 0 0, auto !important;
+}
+
 h1,
 h2,
 h3,
@@ -57,10 +65,10 @@ h6 {
 .academy-card-light {
   background-color: #f4eae0;
   background-image: linear-gradient(
-    160deg,
-    rgba(214, 189, 160, 0.16) 0%,
-    rgba(255, 248, 237, 0.08) 35%,
-    rgba(197, 167, 134, 0.14) 100%
+  160deg,
+  rgba(214, 189, 160, 0.16) 0%,
+  rgba(255, 248, 237, 0.08) 35%,
+  rgba(197, 167, 134, 0.14) 100%
   ),
   radial-gradient(circle at 12% 18%, rgba(164, 121, 71, 0.08) 0, transparent 32%),
   radial-gradient(circle at 78% 72%, rgba(140, 103, 58, 0.07) 0, transparent 34%);
@@ -70,10 +78,10 @@ h6 {
 .academy-card-dark {
   background-color: #2d241e;
   background-image: linear-gradient(
-    160deg,
-    rgba(138, 110, 82, 0.22) 0%,
-    rgba(83, 64, 49, 0.26) 36%,
-    rgba(163, 138, 102, 0.18) 100%
+  160deg,
+  rgba(138, 110, 82, 0.22) 0%,
+  rgba(83, 64, 49, 0.26) 36%,
+  rgba(163, 138, 102, 0.18) 100%
   ),
   radial-gradient(circle at 18% 22%, rgba(187, 143, 86, 0.11) 0, transparent 30%),
   radial-gradient(circle at 82% 70%, rgba(141, 104, 61, 0.12) 0, transparent 34%);
@@ -116,6 +124,19 @@ input,
 textarea {
   cursor: url('/images/feather.svg') 0 0, text !important;
   transition: color 200ms ease;
+}
+
+input::before,
+input::after,
+textarea::before,
+textarea::after {
+  cursor: url('/images/feather.svg') 0 0, text !important;
+}
+
+a:hover,
+button:hover,
+[role='button']:hover {
+  filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.35));
 }
 
 .academy-calendar {

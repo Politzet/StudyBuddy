@@ -121,13 +121,13 @@ function RegisterPage() {
       <div className="absolute inset-0 bg-white/55" />
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-lg rounded-2xl bg-white/45 p-8 backdrop-blur-sm">
-          <div className="mb-6 flex justify-center">
+        <div className="w-full max-w-lg p-8">
+          <div className="mb-4 flex justify-center">
             <img
               src={logoCandidates[logoIndex]}
               onError={handleLogoError}
               alt="StudyBuddy logo"
-              className="max-h-40 w-auto"
+              className="max-h-52 w-auto"
             />
           </div>
 
@@ -138,56 +138,54 @@ function RegisterPage() {
           ) : null}
 
           <form className="space-y-3" onSubmit={handleSubmit}>
-            <div>
-              <label className="mb-1 block font-semibold text-[#453434]">Email:</label>
+            <div className="mx-auto w-full max-w-[400px]">
               <input
                 name="email"
                 type="email"
+                placeholder="Email Address"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full rounded-full bg-white/75 px-4 py-2 text-[#453434] outline-none ring-1 ring-white/60 focus:ring-2 focus:ring-[#453434]/40"
+                className="w-full rounded-md border border-[#d4af37]/40 bg-[#f7efe4]/85 px-4 py-2.5 text-[#453434] outline-none placeholder:text-[rgba(101,84,71,0.6)] focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/25"
                 required
               />
               {fieldErrors.email ? (
                 <p className="mt-1 text-sm text-red-700">{fieldErrors.email}</p>
               ) : null}
             </div>
-            <div>
-              <label className="mb-1 block font-semibold text-[#453434]">User Name:</label>
+            <div className="mx-auto w-full max-w-[400px]">
               <input
                 name="userName"
                 type="text"
+                placeholder="User Name"
                 value={formData.userName}
                 onChange={handleChange}
-                className="w-full rounded-full bg-white/75 px-4 py-2 text-[#453434] outline-none ring-1 ring-white/60 focus:ring-2 focus:ring-[#453434]/40"
+                className="w-full rounded-md border border-[#d4af37]/40 bg-[#f7efe4]/85 px-4 py-2.5 text-[#453434] outline-none placeholder:text-[rgba(101,84,71,0.6)] focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/25"
                 required
               />
             </div>
-            <div>
-              <label className="mb-1 block font-semibold text-[#453434]">Password:</label>
+            <div className="mx-auto w-full max-w-[400px]">
               <input
                 name="password"
                 type="password"
+                placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
                 onBlur={handlePasswordBlur}
-                className="w-full rounded-full bg-white/75 px-4 py-2 text-[#453434] outline-none ring-1 ring-white/60 focus:ring-2 focus:ring-[#453434]/40"
+                className="w-full rounded-md border border-[#d4af37]/40 bg-[#f7efe4]/85 px-4 py-2.5 text-[#453434] outline-none placeholder:text-[rgba(101,84,71,0.6)] focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/25"
                 required
               />
               {fieldErrors.password ? (
                 <p className="mt-1 text-sm text-red-700">{fieldErrors.password}</p>
               ) : null}
             </div>
-            <div>
-              <label className="mb-1 block font-semibold text-[#453434]">
-                Reenter Password:
-              </label>
+            <div className="mx-auto w-full max-w-[400px]">
               <input
                 name="confirmPassword"
                 type="password"
+                placeholder="Reenter Password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full rounded-full bg-white/75 px-4 py-2 text-[#453434] outline-none ring-1 ring-white/60 focus:ring-2 focus:ring-[#453434]/40"
+                className="w-full rounded-md border border-[#d4af37]/40 bg-[#f7efe4]/85 px-4 py-2.5 text-[#453434] outline-none placeholder:text-[rgba(101,84,71,0.6)] focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/25"
                 required
               />
               {fieldErrors.confirmPassword ? (
@@ -195,7 +193,7 @@ function RegisterPage() {
               ) : null}
             </div>
 
-            <div className="pt-2 text-center">
+            <div className="pt-1 text-center">
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -206,7 +204,7 @@ function RegisterPage() {
             </div>
           </form>
 
-          <p className="mt-5 text-center text-[#453434]">
+          <p className="mt-4 text-center text-[#453434]">
             Already have an account?{' '}
             <Link to="/" className="font-semibold underline">
               Logon here

@@ -8,6 +8,8 @@ import { API_BASE_URL } from '../config/api'
 import Breadcrumbs from '../components/Breadcrumbs'
 import CustomDropdown from '../components/CustomDropdown'
 import AcademyCalendarModal from '../components/AcademyCalendarModal'
+import bookmarkIcon from '../assets/images/bookmark.png'
+import timeTurnerIcon from '../assets/images/Time-Turner.png'
 import { setSelectedCategory } from '../store/dashboardSlice'
 import { getAlertClass } from '../styles/alertStyles'
 
@@ -307,31 +309,50 @@ function HomePage() {
   }
 
   const anyError = tasksError || examsError || projectsError || othersError || moodleError
+  const frostedCardClass = isDark
+    ? 'border-[#9a7a61]/35 bg-transparent text-[#f6ede6] shadow-none [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]'
+    : 'border-[#8f6f56]/55 bg-[#fffaf2]/18 text-[#2f2118] shadow-none backdrop-blur-[1.2px] [text-shadow:0_1px_0_rgba(255,248,236,0.65)]'
 
   return (
     <MotionSection
       variants={dashboardStagger}
       initial="hidden"
       animate="show"
-      className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm transition-colors duration-300 ${
+      className={`bg-transparent p-6 transition-colors duration-300 ${
         isDark
-          ? 'academy-page-dark border-[#7d654f]'
-          : 'academy-page-light border-[#d1bfa7]'
+          ? 'text-[#f6ede6]'
+          : 'text-[#2f2118]'
       }`}
     >
+      <div>
       <Breadcrumbs isDark={isDark} />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-3xl font-bold">Hybrid Dashboard</h2>
-          <p className={`mt-1 text-sm ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
+          <h2 className={`text-3xl font-bold ${isDark ? 'text-[#f9ede1]' : 'text-[#2f2118]'}`}>
+            Hybrid Dashboard
+          </h2>
+          <p className={`mt-1 text-sm ${isDark ? 'text-[#f0dfd0]' : 'text-[#4a382c]'}`}>
             Smart overview of your academic timeline.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setShowCalendarModal(true)}
-          className="academy-btn rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-[#f3e6cf] transition hover:bg-[#785845]"
+          className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+            isDark
+              ? 'border-[#a68467]/55 bg-[#4a372b]/55 text-[#f6e9d5] hover:bg-[#5a4335]/70'
+              : 'border-[#c2a485]/70 bg-[#f6ecdf]/65 text-[#5a3f2f] hover:bg-[#efe2d2]/80'
+          }`}
         >
+          <img
+            src={timeTurnerIcon}
+            alt=""
+            aria-hidden="true"
+            className="h-5 w-5 object-contain opacity-90"
+            onError={(event) => {
+              event.currentTarget.style.display = 'none'
+            }}
+          />
           Open Calendar
         </button>
       </div>
@@ -340,18 +361,35 @@ function HomePage() {
 
       <MotionDiv
         variants={dashboardItem}
-        className={`academy-card mt-6 p-6 text-center ${
-          isDark ? 'academy-card-dark' : 'academy-card-light'
-        } border-[#d4af37]/40 shadow-[0_8px_30px_rgba(92,64,34,0.2)]`}
+        className={`academy-card mt-6 p-6 text-center border-[#d4af37]/40 shadow-[0_8px_30px_rgba(92,64,34,0.2)] ${frostedCardClass}`}
       >
         <h3
           className="text-2xl font-bold tracking-wide"
-          style={{ color: '#D4AF37', textShadow: '0 0 10px rgba(212, 175, 55, 0.22)' }}
+          style={
+            isDark
+              ? {
+                  color: '#E2BE57',
+                  textShadow: '0 0 12px rgba(226, 190, 87, 0.35), 0 1px 1px rgba(20, 12, 6, 0.65)',
+                }
+              : {
+                  color: '#9A6A10',
+                  textShadow: '0 1px 0 rgba(255, 246, 225, 0.9), 0 0 10px rgba(212, 175, 55, 0.28)',
+                }
+          }
         >
           {magicalHeadline}
         </h3>
 
-        <div className="mx-auto mt-3 h-px w-40 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
+        <div
+          className={`mx-auto mt-3 h-[2px] w-44 bg-gradient-to-r from-transparent to-transparent ${
+            isDark ? 'via-[#e2be57]' : 'via-[#9a6a10]'
+          }`}
+          style={{
+            boxShadow: isDark
+              ? '0 0 8px rgba(226, 190, 87, 0.35)'
+              : '0 0 6px rgba(154, 106, 16, 0.3)',
+          }}
+        />
 
         <div
           className={`mt-4 rounded-xl border px-4 py-3 ${
@@ -413,62 +451,72 @@ function HomePage() {
         onResetFilters={resetCalendarFilters}
       />
 
-      <MotionDiv variants={dashboardItem} className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <MotionDiv
+        variants={dashboardItem}
+        className={`academy-card mx-auto mt-6 w-full max-w-6xl p-4 ${frostedCardClass}`}
+      >
+        <div className="grid grid-cols-1 items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
+          <div className="hidden sm:block" />
+          <h3 className="text-center text-lg font-semibold">Browse by Course</h3>
+          <div className="justify-self-center sm:justify-self-end">
+            <CustomDropdown
+              value={selectedCourse}
+              onChange={setSelectedCourse}
+              isDark={isDark}
+              className="min-w-[180px]"
+              options={[
+                { value: 'all', label: 'All courses' },
+                ...courses.map((course) => ({ value: course, label: course })),
+              ]}
+            />
+          </div>
+        </div>
+
+        <MotionDiv variants={dashboardStagger} className="mt-4 flex justify-center gap-3 overflow-x-auto pb-2">
+          <MotionDiv
+            variants={dashboardItem}
+            className={`academy-card min-w-[170px] p-3 ${frostedCardClass}`}
+          >
+            <p className="text-center text-xs uppercase tracking-wide">Tasks</p>
+            <p className="mt-1 text-center text-xl font-bold">{courseSummary.tasksCount}</p>
+          </MotionDiv>
+          <MotionDiv
+            variants={dashboardItem}
+            className={`academy-card min-w-[170px] p-3 ${frostedCardClass}`}
+          >
+            <p className="text-center text-xs uppercase tracking-wide">Exams</p>
+            <p className="mt-1 text-center text-xl font-bold">{courseSummary.examsCount}</p>
+          </MotionDiv>
+          <MotionDiv
+            variants={dashboardItem}
+            className={`academy-card min-w-[170px] p-3 ${frostedCardClass}`}
+          >
+            <p className="text-center text-xs uppercase tracking-wide">Projects</p>
+            <p className="mt-1 text-center text-xl font-bold">{courseSummary.projectsCount}</p>
+          </MotionDiv>
+        </MotionDiv>
+      </MotionDiv>
+
+      <MotionDiv variants={dashboardItem} className="mx-auto mt-6 grid w-full max-w-6xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {dashboardCards.map((card) => (
           <MotionButton
             variants={dashboardItem}
             key={card.id}
             type="button"
             onClick={() => handleOpenCategory(card.id, card.path)}
-            className={`academy-card p-6 text-left ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
+            className={`academy-card relative overflow-hidden p-6 text-center ${frostedCardClass}`}
           >
+            <img
+              src={bookmarkIcon}
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute right-3 top-0 h-10 w-auto"
+            />
             <h3 className="text-lg font-semibold">{card.label}</h3>
           </MotionButton>
         ))}
       </MotionDiv>
-
-      <MotionDiv
-        variants={dashboardItem}
-        className={`academy-card mt-6 p-4 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-lg font-semibold">Browse by Course</h3>
-          <CustomDropdown
-            value={selectedCourse}
-            onChange={setSelectedCourse}
-            isDark={isDark}
-            className="min-w-[180px]"
-            options={[
-              { value: 'all', label: 'All courses' },
-              ...courses.map((course) => ({ value: course, label: course })),
-            ]}
-          />
-        </div>
-
-        <MotionDiv variants={dashboardStagger} className="mt-4 flex gap-3 overflow-x-auto pb-2">
-          <MotionDiv
-            variants={dashboardItem}
-            className={`academy-card min-w-[170px] p-3 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
-          >
-            <p className="text-xs uppercase tracking-wide">Tasks</p>
-            <p className="mt-1 text-xl font-bold">{courseSummary.tasksCount}</p>
-          </MotionDiv>
-          <MotionDiv
-            variants={dashboardItem}
-            className={`academy-card min-w-[170px] p-3 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
-          >
-            <p className="text-xs uppercase tracking-wide">Exams</p>
-            <p className="mt-1 text-xl font-bold">{courseSummary.examsCount}</p>
-          </MotionDiv>
-          <MotionDiv
-            variants={dashboardItem}
-            className={`academy-card min-w-[170px] p-3 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
-          >
-            <p className="text-xs uppercase tracking-wide">Projects</p>
-            <p className="mt-1 text-xl font-bold">{courseSummary.projectsCount}</p>
-          </MotionDiv>
-        </MotionDiv>
-      </MotionDiv>
+      </div>
     </MotionSection>
   )
 }
