@@ -17,10 +17,10 @@ import MoodleSync from './pages/MoodleSync'
 import { useTheme } from './context/ThemeContext'
 
 const appBgCandidates = [
-  '/src/assets/images/logon page background.png',
-  '/src/assets/images/logon page background.jpg',
-  '/src/assets/images/logon page background.jpeg',
-  '/src/assets/images/logon page background.webp',
+  '/images/logon page background.png',
+  '/images/logon page background.jpg',
+  '/images/logon page background.jpeg',
+  '/images/logon page background.webp',
 ]
 
 function ProtectedRoute({ children }) {
@@ -96,19 +96,23 @@ function App() {
       })
     }
 
-    const handleMouseLeave = () => {
+    const handleMouseLeaveWindow = (event) => {
+      // Avoid flicker: only hide when the cursor leaves the browser viewport entirely.
+      if (event.relatedTarget || event.toElement) {
+        return
+      }
       setWandGlowPos((prev) => ({ ...prev, visible: false }))
     }
 
     window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseout', handleMouseLeave)
+    window.addEventListener('mouseout', handleMouseLeaveWindow)
 
     return () => {
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current)
       }
       window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseout', handleMouseLeave)
+      window.removeEventListener('mouseout', handleMouseLeaveWindow)
     }
   }, [isDark])
 
@@ -252,9 +256,9 @@ function App() {
       </div>
       {isDark && wandGlowPos.visible ? (
         <div
-          className="pointer-events-none fixed inset-0 z-[120]"
+          className="pointer-events-none fixed inset-0 z-[170]"
           style={{
-            background: `radial-gradient(circle 130px at ${wandGlowPos.x}px ${wandGlowPos.y}px, rgba(255, 223, 140, 0.28) 0%, rgba(255, 223, 140, 0.14) 34%, rgba(255, 223, 140, 0.06) 54%, transparent 74%)`,
+            background: `radial-gradient(circle 105px at ${wandGlowPos.x}px ${wandGlowPos.y}px, rgba(255, 223, 140, 0.28) 0%, rgba(255, 223, 140, 0.14) 34%, rgba(255, 223, 140, 0.06) 54%, transparent 74%)`,
             mixBlendMode: 'screen',
           }}
         />

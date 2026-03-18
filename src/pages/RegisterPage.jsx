@@ -4,17 +4,17 @@ import { API_BASE_URL } from '../config/api'
 import { getAlertClass } from '../styles/alertStyles'
 
 const bgCandidates = [
-  '/src/assets/images/logon page background.png',
-  '/src/assets/images/logon page background.jpg',
-  '/src/assets/images/logon page background.jpeg',
-  '/src/assets/images/logon page background.webp',
+  '/images/logon page background.png',
+  '/images/logon page background.jpg',
+  '/images/logon page background.jpeg',
+  '/images/logon page background.webp',
 ]
 
 const logoCandidates = [
-  '/src/assets/images/logon page logo.png',
-  '/src/assets/images/logon page logo.jpg',
-  '/src/assets/images/logon page logo.jpeg',
-  '/src/assets/images/logon page logo.webp',
+  '/images/logon page logo.png',
+  '/images/logon page logo.jpg',
+  '/images/logon page logo.jpeg',
+  '/images/logon page logo.webp',
 ]
 
 function RegisterPage() {

@@ -20,6 +20,15 @@ function MoodleSync() {
   const [importDraft, setImportDraft] = useState(null)
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const courseCardClass = isDark
+    ? 'border-[#a68467]/55 bg-[#4a372b]/55 text-[#f6e9d5]'
+    : 'border-[#c2a485]/70 bg-[#f6ecdf]/65 text-[#5a3f2f]'
+  const itemCardClass = isDark
+    ? 'border-[#b07a4f]/60 bg-[#5b3a2a]/30 text-[#f6ede6]'
+    : 'border-[#d4a06d]/65 bg-[#f5e1cf]/70 text-[#453434]'
+  const primaryActionBtnClass = isDark
+    ? 'rounded-lg border border-[#b39271]/55 bg-[#6c4f3e]/85 px-4 py-2 text-sm font-semibold text-[#f6e9d5] transition hover:bg-[#7a5b47]'
+    : 'rounded-lg border border-[#b48f6e]/75 bg-[#9a7459]/95 px-4 py-2 text-sm font-semibold text-[#fff7ee] shadow-[0_6px_14px_rgba(88,58,39,0.2)] transition hover:bg-[#87664f]'
 
   const {
     data: moodleAssignments,
@@ -213,16 +222,10 @@ function MoodleSync() {
   const groupedCourses = useMemo(() => Object.keys(groupedItems).sort(), [groupedItems])
 
   return (
-    <section
-      className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm ${
-        isDark
-          ? 'border-[#5a463b] bg-[#2d221d]/85 text-[#f6ede6]'
-          : 'border-[#d9c7b8] bg-[#fff8f1]/88 text-[#453434]'
-      }`}
-    >
+    <section className="rounded-2xl border border-transparent bg-transparent p-6 shadow-none backdrop-blur-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">Moodle Sync</h2>
+          <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : ''}`}>Moodle Sync</h2>
           <p className={`mt-1 ${isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'}`}>
             Import Tasks, Exams, and Projects from Moodle mock data.
           </p>
@@ -230,7 +233,7 @@ function MoodleSync() {
         <button
           type="button"
           onClick={handleSync}
-          className="rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#785845]"
+          className={primaryActionBtnClass}
         >
           Sync with Moodle
         </button>
@@ -309,11 +312,7 @@ function MoodleSync() {
 
       {importDraft ? (
         <div
-          className={`mt-4 rounded-md border px-4 py-3 text-sm ${
-            isDark
-              ? 'border-[#5a463b] bg-[#1f1612]/80 text-[#eadccf]'
-              : 'border-[#d9c7b8] bg-[#fffaf4]/85 text-[#6b5447]'
-          }`}
+          className={`mt-4 rounded-md border px-4 py-3 text-sm ${itemCardClass}`}
         >
           Prepared for import: <span className="font-medium">{importDraft.type}</span> -{' '}
           {importDraft.title} ({importDraft.course})
@@ -334,11 +333,9 @@ function MoodleSync() {
             {groupedCourses.map((courseName) => (
               <div
                 key={courseName}
-                className={`rounded-lg border p-4 ${
-                  isDark ? 'border-[#5f4a3f] bg-[#2a201b]/85' : 'border-[#d9c7b8] bg-[#fff7ef]/90'
-                }`}
+                className={`rounded-lg border p-4 ${courseCardClass}`}
               >
-                <h3 className="mb-3 text-sm font-semibold">{courseName}</h3>
+                <h3 className={`mb-3 text-sm font-semibold ${isDark ? 'text-white' : ''}`}>{courseName}</h3>
                 <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {groupedItems[courseName].map((item) => {
                     const keyPrefix =
@@ -347,11 +344,7 @@ function MoodleSync() {
                     return (
                       <li
                         key={key}
-                        className={`rounded-lg border p-3 ${
-                          isDark
-                            ? 'border-[#5f4a3f] bg-[#2f241f]/90'
-                            : 'border-[#d9c7b8] bg-[#fffaf4]/95'
-                        }`}
+                        className={`rounded-lg border p-3 ${itemCardClass}`}
                       >
                         {activeTab === 'tasks' ? (
                           <>

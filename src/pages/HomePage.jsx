@@ -8,8 +8,6 @@ import { API_BASE_URL } from '../config/api'
 import Breadcrumbs from '../components/Breadcrumbs'
 import CustomDropdown from '../components/CustomDropdown'
 import AcademyCalendarModal from '../components/AcademyCalendarModal'
-import bookmarkIcon from '../assets/images/bookmark.png'
-import timeTurnerIcon from '../assets/images/Time-Turner.png'
 import { setSelectedCategory } from '../store/dashboardSlice'
 import { getAlertClass } from '../styles/alertStyles'
 
@@ -19,6 +17,8 @@ const dashboardCards = [
   { id: 'projects', label: 'Projects', path: '/projects' },
   { id: 'other', label: 'Other', path: '/other' },
 ]
+const bookmarkIcon = '/images/bookmark.png'
+const timeTurnerIcon = '/images/Time-Turner.png'
 
 const getExamDateTime = (exam) => {
   const datePart = new Date(exam.date).toISOString().slice(0, 10)
@@ -309,9 +309,9 @@ function HomePage() {
   }
 
   const anyError = tasksError || examsError || projectsError || othersError || moodleError
-  const frostedCardClass = isDark
-    ? 'border-[#9a7a61]/35 bg-transparent text-[#f6ede6] shadow-none [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]'
-    : 'border-[#8f6f56]/55 bg-[#fffaf2]/18 text-[#2f2118] shadow-none backdrop-blur-[1.2px] [text-shadow:0_1px_0_rgba(255,248,236,0.65)]'
+  const openCalendarCardClass = isDark
+    ? 'border-[#a68467]/55 bg-[#4a372b]/55 text-[#f6e9d5] shadow-none'
+    : 'border-[#c2a485]/70 bg-[#f6ecdf]/65 text-[#5a3f2f] shadow-none'
 
   return (
     <MotionSection
@@ -361,7 +361,7 @@ function HomePage() {
 
       <MotionDiv
         variants={dashboardItem}
-        className={`academy-card mt-6 p-6 text-center border-[#d4af37]/40 shadow-[0_8px_30px_rgba(92,64,34,0.2)] ${frostedCardClass}`}
+        className={`academy-card mt-6 p-6 text-center ${openCalendarCardClass}`}
       >
         <h3
           className="text-2xl font-bold tracking-wide"
@@ -453,7 +453,7 @@ function HomePage() {
 
       <MotionDiv
         variants={dashboardItem}
-        className={`academy-card mx-auto mt-6 w-full max-w-6xl p-4 ${frostedCardClass}`}
+        className={`academy-card mx-auto mt-6 w-full max-w-6xl p-4 ${openCalendarCardClass}`}
       >
         <div className="grid grid-cols-1 items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
           <div className="hidden sm:block" />
@@ -475,21 +475,21 @@ function HomePage() {
         <MotionDiv variants={dashboardStagger} className="mt-4 flex justify-center gap-3 overflow-x-auto pb-2">
           <MotionDiv
             variants={dashboardItem}
-            className={`academy-card min-w-[170px] p-3 ${frostedCardClass}`}
+            className={`academy-card min-w-[170px] p-3 ${openCalendarCardClass}`}
           >
             <p className="text-center text-xs uppercase tracking-wide">Tasks</p>
             <p className="mt-1 text-center text-xl font-bold">{courseSummary.tasksCount}</p>
           </MotionDiv>
           <MotionDiv
             variants={dashboardItem}
-            className={`academy-card min-w-[170px] p-3 ${frostedCardClass}`}
+            className={`academy-card min-w-[170px] p-3 ${openCalendarCardClass}`}
           >
             <p className="text-center text-xs uppercase tracking-wide">Exams</p>
             <p className="mt-1 text-center text-xl font-bold">{courseSummary.examsCount}</p>
           </MotionDiv>
           <MotionDiv
             variants={dashboardItem}
-            className={`academy-card min-w-[170px] p-3 ${frostedCardClass}`}
+            className={`academy-card min-w-[170px] p-3 ${openCalendarCardClass}`}
           >
             <p className="text-center text-xs uppercase tracking-wide">Projects</p>
             <p className="mt-1 text-center text-xl font-bold">{courseSummary.projectsCount}</p>
@@ -504,7 +504,7 @@ function HomePage() {
             key={card.id}
             type="button"
             onClick={() => handleOpenCategory(card.id, card.path)}
-            className={`academy-card relative overflow-hidden p-6 text-center ${frostedCardClass}`}
+            className={`academy-card relative overflow-hidden p-6 text-center ${openCalendarCardClass}`}
           >
             <img
               src={bookmarkIcon}

@@ -23,13 +23,13 @@ function AcademyCalendarModal({
     <ModalPortal>
       <div className="fixed inset-0 z-[160] flex items-start justify-center overflow-y-auto bg-black/35 p-4 backdrop-blur-sm sm:items-center sm:p-6">
         <div
-          className={`my-4 w-full max-w-4xl rounded-2xl border p-6 shadow-2xl ${
+          className={`my-4 w-full max-w-[780px] rounded-2xl border p-3 shadow-2xl ${
             isDark
               ? 'border-[#7a614e] bg-[#2d221d]/95 text-[#f6ede6]'
               : 'border-[#d9c7b8] bg-[#fffaf4]/98 text-[#453434]'
           }`}
         >
-          <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="mb-2 flex items-center justify-between gap-3">
             <div>
               <h3 className="text-2xl font-semibold">Magical Master Calendar</h3>
             </div>
@@ -42,7 +42,7 @@ function AcademyCalendarModal({
             </button>
           </div>
 
-          <div className="mb-4 flex flex-wrap items-center gap-2">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
             {[
               { key: 'exams', label: 'Exams', className: 'academy-legend-exam' },
               { key: 'tasks', label: 'Tasks', className: 'academy-legend-task' },
@@ -75,11 +75,11 @@ function AcademyCalendarModal({
             </button>
           </div>
 
-          <div className="mx-auto flex w-full max-w-[980px] flex-col gap-6 lg:flex-row lg:items-start lg:justify-center lg:gap-8">
+          <div className="grid w-full grid-cols-1 gap-3 lg:grid-cols-[430px_300px] lg:items-start lg:justify-center lg:gap-3">
             <Calendar
               onChange={onDayChange}
               value={selectedDay}
-              className={`academy-calendar academy-calendar-popup w-full lg:w-[560px] lg:flex-none ${
+              className={`academy-calendar academy-calendar-popup w-full ${
                 isDark ? 'academy-calendar-dark' : 'academy-calendar-light'
               }`}
               tileClassName={({ date, view }) => {
@@ -126,7 +126,7 @@ function AcademyCalendarModal({
             />
 
             <div
-              className={`max-h-[540px] w-full overflow-y-auto rounded-xl border p-4 lg:w-[340px] lg:flex-none ${
+              className={`max-h-[460px] w-full overflow-y-auto rounded-xl border p-4 ${
                 isDark
                   ? 'border-[#6a5448] bg-[#251c17]/75'
                   : 'border-[#d7c5b7] bg-[#fff7ef]/90'

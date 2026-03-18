@@ -46,6 +46,15 @@ function ProjectsPage() {
   const [courseNameInput, setCourseNameInput] = useState('')
   const [isAddingCourse, setIsAddingCourse] = useState(false)
   const [coursesRefreshKey, setCoursesRefreshKey] = useState(0)
+  const courseCardClass = isDark
+    ? 'border-[#a68467]/55 bg-[#4a372b]/55 text-[#f6e9d5]'
+    : 'border-[#c2a485]/70 bg-[#f6ecdf]/65 text-[#5a3f2f]'
+  const itemCardClass = isDark
+    ? 'border-[#b07a4f]/60 bg-[#5b3a2a]/30 text-[#f6ede6]'
+    : 'border-[#d4a06d]/65 bg-[#f5e1cf]/70 text-[#453434]'
+  const primaryActionBtnClass = isDark
+    ? 'rounded-lg border border-[#b39271]/55 bg-[#6c4f3e]/85 px-4 py-2 text-sm font-semibold text-[#f6e9d5] transition hover:bg-[#7a5b47]'
+    : 'rounded-lg border border-[#b48f6e]/75 bg-[#9a7459]/95 px-4 py-2 text-sm font-semibold text-[#fff7ee] shadow-[0_6px_14px_rgba(88,58,39,0.2)] transition hover:bg-[#87664f]'
 
   const validateStudyDays = (deadlineValue, studyDaysValue) => {
     const deadline = new Date(deadlineValue)
@@ -344,16 +353,10 @@ function ProjectsPage() {
   }
 
   return (
-    <section
-      className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm transition-colors duration-300 ${
-        isDark
-          ? 'academy-page-dark border-[#7d654f]'
-          : 'academy-page-light border-[#d1bfa7]'
-      }`}
-    >
+    <section className="rounded-2xl border border-transparent bg-transparent p-6 shadow-none backdrop-blur-0 transition-colors duration-300">
       <Breadcrumbs isDark={isDark} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold">Projects</h2>
+        <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : ''}`}>Projects</h2>
         <div className="flex items-center gap-2">
           <CustomDropdown
             value={normalizedCourseFilter}
@@ -368,7 +371,7 @@ function ProjectsPage() {
           <button
             type="button"
             onClick={openAddModal}
-            className="rounded-md bg-[#8b6b57] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#785845]"
+            className={primaryActionBtnClass}
           >
             Add Project
           </button>
@@ -402,9 +405,9 @@ function ProjectsPage() {
           {groupedCourses.map((courseName) => (
             <div
               key={courseName}
-              className={`academy-card p-4 ${isDark ? 'academy-card-dark' : 'academy-card-light'}`}
+              className={`academy-card border p-4 ${courseCardClass}`}
             >
-              <h3 className="mb-3 text-sm font-semibold">{courseName}</h3>
+              <h3 className={`mb-3 text-sm font-semibold ${isDark ? 'text-white' : ''}`}>{courseName}</h3>
               <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {groupedProjects[courseName].map((project) => (
                   <MotionLi
@@ -422,14 +425,12 @@ function ProjectsPage() {
                         : { scale: 1, rotate: 0, x: 0, y: 0, opacity: 1 }
                     }
                     transition={{ duration: 0.66, ease: [0.2, 0.8, 0.2, 1] }}
-                    className={`academy-card relative overflow-visible p-4 ${
-                      isDark ? 'academy-card-dark' : 'academy-card-light'
-                    }`}
+                    className={`academy-card relative overflow-visible border p-4 ${itemCardClass}`}
                   >
                     {sparkleProjectId === String(project.id) && project.source === 'db' ? (
                       <CreationSparkle />
                     ) : null}
-                    <h4 className="font-semibold">{project.title}</h4>
+                    <h4 className={`font-semibold ${isDark ? 'text-white' : ''}`}>{project.title}</h4>
                     <p className="text-sm">Deadline: {new Date(project.deadline).toLocaleString()}</p>
                     <p className="text-sm">
                       Study days: {Number(project.studyDays) > 0 ? project.studyDays : 1}

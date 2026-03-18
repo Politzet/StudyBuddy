@@ -19,6 +19,9 @@ function ResourcesPage() {
   const [selectedAssignment, setSelectedAssignment] = useState('')
   const [refreshSeed, setRefreshSeed] = useState(0)
   const [viewFilter, setViewFilter] = useState('all')
+  const itemCardClass = isDark
+    ? 'border-[#b07a4f]/60 bg-[#5b3a2a]/30 text-[#f6ede6]'
+    : 'border-[#d4a06d]/65 bg-[#f5e1cf]/70 text-[#453434]'
 
   const { data: moodleData } = useFetch(`${API_BASE_URL}/api/moodle/sync`)
   const moodleTasks = useMemo(
@@ -306,15 +309,9 @@ function ResourcesPage() {
   }
 
   return (
-    <section
-      className={`rounded-2xl border p-6 shadow-lg backdrop-blur-sm ${
-        isDark
-          ? 'border-[#5a463b] bg-[#2d221d]/85 text-[#f6ede6]'
-          : 'border-[#d9c7b8] bg-[#fff8f1]/88 text-[#453434]'
-      }`}
-    >
+    <section className="rounded-2xl border border-transparent bg-transparent p-6 shadow-none backdrop-blur-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold">Learning Hub</h2>
+        <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : ''}`}>Learning Hub</h2>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ff0000] px-3 py-1 text-xs font-semibold text-white">
           <svg
             width="14"
@@ -438,11 +435,7 @@ function ResourcesPage() {
           {videos.map((video) => (
             <li
               key={video.id}
-              className={`overflow-hidden rounded-lg border ${
-                isDark
-                  ? 'border-[#5f4a3f] bg-[#2f241f]/90'
-                  : 'border-[#d9c7b8] bg-[#fffaf4]/95'
-              }`}
+              className={`overflow-hidden rounded-lg border ${itemCardClass}`}
             >
               <img
                 src={video.thumbnail}
@@ -509,9 +502,7 @@ function ResourcesPage() {
       {viewFilter === 'favorites' ? (
         favorites.length === 0 ? (
           <div
-            className={`mt-6 rounded-lg border px-4 py-4 text-sm ${
-              isDark ? 'border-[#5f4a3f] bg-[#2f241f]/90' : 'border-[#d9c7b8] bg-[#fffaf4]/95'
-            }`}
+            className={`mt-6 rounded-lg border px-4 py-4 text-sm ${itemCardClass}`}
           >
             You have no favorites yet. Save videos to build your study list.
           </div>
@@ -520,11 +511,7 @@ function ResourcesPage() {
             {favorites.map((favorite) => (
               <li
                 key={favorite._id}
-                className={`overflow-hidden rounded-lg border ${
-                  isDark
-                    ? 'border-[#5f4a3f] bg-[#2f241f]/90'
-                    : 'border-[#d9c7b8] bg-[#fffaf4]/95'
-                }`}
+                className={`overflow-hidden rounded-lg border ${itemCardClass}`}
               >
                 {favorite.thumbnail ? (
                   <img

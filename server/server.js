@@ -18,19 +18,43 @@ const app = express()
 const port = Number(process.env.PORT) || 5000
 const PASSWORD_SALT_ROUNDS = 10
 const DEFAULT_CATEGORY_NAMES = ['Tasks', 'Tests', 'Projects', 'Other']
+const MONGO_CONNECT_MAX_ATTEMPTS = Number(process.env.MONGO_CONNECT_MAX_ATTEMPTS || 0)
+const MONGO_CONNECT_RETRY_DELAY_MS = Number(process.env.MONGO_CONNECT_RETRY_DELAY_MS || 2000)
+const configuredCorsOrigins = String(process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+const vercelProductionOrigins = new Set([
+  'https://study-buddy-wizard.vercel.app',
+  'https://studybuddy-wizard.vercel.app',
+])
+
+const isAllowedVercelPreviewOrigin = (origin) =>
+  /^https:\/\/study-buddy-wizard-[a-z0-9-]+\.vercel\.app$/i.test(origin)
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) {
+    return true
+  }
+
+  const localhostPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/
+  if (localhostPattern.test(origin)) {
+    return true
+  }
+
+  if (configuredCorsOrigins.includes(origin) || vercelProductionOrigins.has(origin)) {
+    return true
+  }
+
+  return isAllowedVercelPreviewOrigin(origin)
+}
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow non-browser tools (curl, Postman) without an Origin header.
-      if (!origin) {
-        return callback(null, true)
-      }
-
-      const allowedOriginPattern =
-        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/
-
-      if (allowedOriginPattern.test(origin)) {
+      // Allow non-browser tools (curl, Postman), localhost dev,
+      // and configured/deployed frontend origins.
+      if (isAllowedOrigin(origin)) {
         return callback(null, true)
       }
 
@@ -972,7 +996,28 @@ async function startServer() {
     throw new Error('MONGO_URI is missing in server/.env')
   }
 
-  await mongoose.connect(mongoUri)
+  let attempt = 0
+  while (true) {
+    attempt += 1
+    try {
+      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 10000 })
+      console.log('MongoDB connected successfully.')
+      break
+    } catch (error) {
+      console.error(
+        `MongoDB connection attempt ${attempt}${
+          MONGO_CONNECT_MAX_ATTEMPTS > 0 ? `/${MONGO_CONNECT_MAX_ATTEMPTS}` : ''
+        } failed:`,
+        error?.message || error,
+      )
+      const reachedMaxAttempts =
+        MONGO_CONNECT_MAX_ATTEMPTS > 0 && attempt >= MONGO_CONNECT_MAX_ATTEMPTS
+      if (reachedMaxAttempts) {
+        throw error
+      }
+      await new Promise((resolve) => setTimeout(resolve, MONGO_CONNECT_RETRY_DELAY_MS))
+    }
+  }
 
   const initialCourses = ['מבוא לתכנות', 'אלגוריתמים', 'מארג שירותי אינטרנט', 'General']
   await Promise.all(
