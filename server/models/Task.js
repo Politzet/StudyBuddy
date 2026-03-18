@@ -42,11 +42,24 @@ const taskSchema = new mongoose.Schema({
     enum: ['tasks', 'tests', 'projects', 'other'],
     default: 'tasks',
   },
+  moodleSyncId: {
+    type: String,
+    trim: true,
+    default: '',
+  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
 })
+
+taskSchema.index(
+  { userId: 1, moodleSyncId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { moodleSyncId: { $exists: true, $type: 'string', $ne: '' } },
+  },
+)
 
 const Task = mongoose.model('Task', taskSchema)
 

@@ -86,30 +86,19 @@ function ExamsPage() {
     error: coursesError,
     refetch: refetchCourses,
   } = useFetch(`${API_BASE_URL}/api/courses?r=${coursesRefreshKey}`)
-  const { data: moodleData } = useFetch(`${API_BASE_URL}/api/moodle/sync`)
 
   const exams = useMemo(() => (Array.isArray(data) ? data : []), [data])
-  const moodleExams = useMemo(
-    () => (Array.isArray(moodleData?.exams) ? moodleData.exams : []),
-    [moodleData],
-  )
   const availableCourses = useMemo(
     () => (Array.isArray(coursesData) ? coursesData.map((course) => course.name).filter(Boolean).sort() : []),
     [coursesData],
   )
   const allExams = useMemo(() => {
-    const imported = exams.map((exam) => ({
+    return exams.map((exam) => ({
       ...exam,
       id: exam._id,
       source: 'db',
     }))
-    const mocked = moodleExams.map((exam) => ({
-      ...exam,
-      id: exam.id,
-      source: 'moodle',
-    }))
-    return [...imported, ...mocked]
-  }, [exams, moodleExams])
+  }, [exams])
   const courses = useMemo(
     () => Array.from(new Set(allExams.map((exam) => exam.course).filter(Boolean))).sort(),
     [allExams],
@@ -374,26 +363,22 @@ function ExamsPage() {
                     <p className="text-sm">
                       Location: {exam.location?.building || '—'} / {exam.location?.room || '—'}
                     </p>
-                    {exam.source === 'db' ? (
-                      <div className="mt-3 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(exam)}
-                          className="rounded-md bg-[#b38763] px-3 py-1.5 text-xs font-medium text-white"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(exam._id)}
-                          className="rounded-md bg-[#6f3f3f] px-3 py-1.5 text-xs font-medium text-white"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="mt-3 text-xs">Source: Moodle schedule</p>
-                    )}
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(exam)}
+                        className="rounded-md bg-[#b38763] px-3 py-1.5 text-xs font-medium text-white"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(exam._id)}
+                        className="rounded-md bg-[#6f3f3f] px-3 py-1.5 text-xs font-medium text-white"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>

@@ -43,8 +43,21 @@ const projectSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    moodleSyncId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
   },
   { timestamps: true },
+)
+
+projectSchema.index(
+  { userId: 1, moodleSyncId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { moodleSyncId: { $exists: true, $type: 'string', $ne: '' } },
+  },
 )
 
 const Project = mongoose.model('Project', projectSchema)

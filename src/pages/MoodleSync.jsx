@@ -7,6 +7,29 @@ import { useTheme } from '../context/ThemeContext'
 import { getAlertClass } from '../styles/alertStyles'
 import { setLatestSyncAt } from '../store/dashboardSlice'
 
+const toDayIso = (value) => {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return ''
+  }
+  return parsed.toISOString().slice(0, 10)
+}
+
+const toDateTimeIso = (value) => {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return ''
+  }
+  return parsed.toISOString()
+}
+
+const taskSignature = (task) =>
+  `${String(task.title || '').trim()}|${String(task.course || '').trim()}|${toDateTimeIso(task.dueDate)}`
+const examSignature = (exam) =>
+  `${String(exam.course || '').trim()}|${String(exam.time || '').trim()}|${toDayIso(exam.date)}`
+const projectSignature = (project) =>
+  `${String(project.title || '').trim()}|${String(project.course || '').trim()}|${toDateTimeIso(project.deadline)}`
+
 function MoodleSync() {
   const dispatch = useDispatch()
   const { user } = useSelector((state) => state.user)
@@ -36,6 +59,18 @@ function MoodleSync() {
     error,
     refetch,
   } = useFetch(`${API_BASE_URL}/api/moodle/sync`)
+  const {
+    data: importedTasksData,
+    refetch: refetchImportedTasks,
+  } = useFetch(userId ? `${API_BASE_URL}/api/tasks?userId=${encodeURIComponent(userId)}&category=tasks` : '')
+  const {
+    data: importedExamsData,
+    refetch: refetchImportedExams,
+  } = useFetch(userId ? `${API_BASE_URL}/api/exams?userId=${encodeURIComponent(userId)}` : '')
+  const {
+    data: importedProjectsData,
+    refetch: refetchImportedProjects,
+  } = useFetch(userId ? `${API_BASE_URL}/api/projects?userId=${encodeURIComponent(userId)}` : '')
 
   const moodleData = useMemo(() => {
     const source = moodleAssignments && typeof moodleAssignments === 'object' ? moodleAssignments : {}
@@ -45,6 +80,63 @@ function MoodleSync() {
       projects: Array.isArray(source.projects) ? source.projects : [],
     }
   }, [moodleAssignments])
+  const importedTasks = useMemo(
+    () => (Array.isArray(importedTasksData) ? importedTasksData : []),
+    [importedTasksData],
+  )
+  const importedExams = useMemo(
+    () => (Array.isArray(importedExamsData) ? importedExamsData : []),
+    [importedExamsData],
+  )
+  const importedProjects = useMemo(
+    () => (Array.isArray(importedProjectsData) ? importedProjectsData : []),
+    [importedProjectsData],
+  )
+  const importedTaskIds = useMemo(
+    () =>
+      new Set(
+        importedTasks
+          .map((task) => String(task.moodleSyncId || '').trim())
+          .filter(Boolean),
+      ),
+    [importedTasks],
+  )
+  const importedExamIds = useMemo(
+    () =>
+      new Set(
+        importedExams
+          .map((exam) => String(exam.moodleSyncId || '').trim())
+          .filter(Boolean),
+      ),
+    [importedExams],
+  )
+  const importedProjectIds = useMemo(
+    () =>
+      new Set(
+        importedProjects
+          .map((project) => String(project.moodleSyncId || '').trim())
+          .filter(Boolean),
+      ),
+    [importedProjects],
+  )
+  const importedTaskSignatures = useMemo(
+    () => new Set(importedTasks.map((task) => taskSignature(task))),
+    [importedTasks],
+  )
+  const importedExamSignatures = useMemo(
+    () => new Set(importedExams.map((exam) => examSignature(exam))),
+    [importedExams],
+  )
+  const importedProjectSignatures = useMemo(
+    () => new Set(importedProjects.map((project) => projectSignature(project))),
+    [importedProjects],
+  )
+
+  const refreshImportedItems = () => {
+    refetchImportedTasks()
+    refetchImportedExams()
+    refetchImportedProjects()
+  }
 
   const ensureCourseExists = async (courseName) => {
     const coursesResponse = await fetch(`${API_BASE_URL}/api/courses?userId=${encodeURIComponent(userId)}`)
@@ -72,7 +164,7 @@ function MoodleSync() {
   }
 
   const importTask = async (task, index) => {
-    const importKey = `task-${index}`
+    const importKey = `task-${task.id || index}`
     setImportDraft({ type: 'Task', title: task.title, course: task.course })
     setMessage('')
     setErrorMessage('')
@@ -91,6 +183,7 @@ function MoodleSync() {
           dueDate: task.dueDate,
           difficulty: 3,
           category: 'tasks',
+          moodleSyncId: String(task.id || ''),
         }),
       })
 
@@ -100,6 +193,7 @@ function MoodleSync() {
       }
 
       setMessage('Task imported from Moodle.')
+      refreshImportedItems()
     } catch (importError) {
       setErrorMessage(importError.message)
     } finally {
@@ -108,7 +202,7 @@ function MoodleSync() {
   }
 
   const importExam = async (exam, index) => {
-    const importKey = `exam-${index}`
+    const importKey = `exam-${exam.id || index}`
     setImportDraft({ type: 'Exam', title: exam.course, course: exam.course })
     setMessage('')
     setErrorMessage('')
@@ -124,6 +218,7 @@ function MoodleSync() {
           date: exam.date,
           time: exam.time,
           location: exam.location,
+          moodleSyncId: String(exam.id || ''),
         }),
       })
 
@@ -133,6 +228,7 @@ function MoodleSync() {
       }
 
       setMessage('Exam imported from Moodle.')
+      refreshImportedItems()
     } catch (importError) {
       setErrorMessage(importError.message)
     } finally {
@@ -141,7 +237,7 @@ function MoodleSync() {
   }
 
   const importProject = async (project, index) => {
-    const importKey = `project-${index}`
+    const importKey = `project-${project.id || index}`
     setImportDraft({ type: 'Project', title: project.title, course: project.course })
     setMessage('')
     setErrorMessage('')
@@ -161,6 +257,7 @@ function MoodleSync() {
           weight: project.weight || 0,
           progress: 0,
           isProject: true,
+          moodleSyncId: String(project.id || ''),
         }),
       })
 
@@ -170,6 +267,7 @@ function MoodleSync() {
       }
 
       setMessage('Project imported from Moodle.')
+      refreshImportedItems()
     } catch (importError) {
       setErrorMessage(importError.message)
     } finally {
@@ -179,6 +277,7 @@ function MoodleSync() {
 
   const handleSync = () => {
     refetch()
+    refreshImportedItems()
     dispatch(setLatestSyncAt(new Date().toISOString()))
   }
 
@@ -190,13 +289,46 @@ function MoodleSync() {
 
   const activeItems = useMemo(() => {
     if (activeTab === 'tasks') {
-      return moodleData.tasks.map((item, index) => ({ ...item, _index: index }))
+      return moodleData.tasks
+        .filter((item) => {
+          const moodleId = String(item.id || '').trim()
+          if (moodleId && importedTaskIds.has(moodleId)) {
+            return false
+          }
+          return !importedTaskSignatures.has(taskSignature(item))
+        })
+        .map((item, index) => ({ ...item, _index: index }))
     }
     if (activeTab === 'exams') {
-      return moodleData.exams.map((item, index) => ({ ...item, _index: index }))
+      return moodleData.exams
+        .filter((item) => {
+          const moodleId = String(item.id || '').trim()
+          if (moodleId && importedExamIds.has(moodleId)) {
+            return false
+          }
+          return !importedExamSignatures.has(examSignature(item))
+        })
+        .map((item, index) => ({ ...item, _index: index }))
     }
-    return moodleData.projects.map((item, index) => ({ ...item, _index: index }))
-  }, [activeTab, moodleData])
+    return moodleData.projects
+      .filter((item) => {
+        const moodleId = String(item.id || '').trim()
+        if (moodleId && importedProjectIds.has(moodleId)) {
+          return false
+        }
+        return !importedProjectSignatures.has(projectSignature(item))
+      })
+      .map((item, index) => ({ ...item, _index: index }))
+  }, [
+    activeTab,
+    moodleData,
+    importedTaskIds,
+    importedExamIds,
+    importedProjectIds,
+    importedTaskSignatures,
+    importedExamSignatures,
+    importedProjectSignatures,
+  ])
 
   const availableCourses = useMemo(() => {
     const courses = activeItems.map((item) => item.course).filter(Boolean)
@@ -340,7 +472,7 @@ function MoodleSync() {
                   {groupedItems[courseName].map((item) => {
                     const keyPrefix =
                       activeTab === 'tasks' ? 'task' : activeTab === 'exams' ? 'exam' : 'project'
-                    const key = `${keyPrefix}-${item._index}`
+                    const key = `${keyPrefix}-${item.id || item._index}`
                     return (
                       <li
                         key={key}

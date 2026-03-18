@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:server": "npm --prefix server run dev",
     "start": "npm --prefix server run start",
+    "start:render": "npm --prefix server run start",
     "start:server": "npm --prefix server run start",
     "postinstall": "npm --prefix server install",
     "build": "vite build",

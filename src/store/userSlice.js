@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const AUTH_STORAGE_KEY = 'studybuddy_auth'
+const USER_SCOPED_STORAGE_KEYS = ['add-task-form', 'tasks-course-filter']
 
 const loadAuthState = () => {
   try {
@@ -36,6 +37,17 @@ const persistAuthState = (user, isLoggedIn) => {
   }
 }
 
+const clearUserScopedStorage = () => {
+  try {
+    if (typeof window === 'undefined') {
+      return
+    }
+    USER_SCOPED_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key))
+  } catch {
+    // Ignore storage clear errors to avoid blocking auth flow.
+  }
+}
+
 const persistedAuth = loadAuthState()
 
 const initialState = {
@@ -53,6 +65,11 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     login: (state, action) => {
+      const previousUserId = state.user?.id ? String(state.user.id) : ''
+      const nextUserId = action.payload?.id ? String(action.payload.id) : ''
+      if (nextUserId && previousUserId !== nextUserId) {
+        clearUserScopedStorage()
+      }
       state.user = action.payload
       state.isLoggedIn = true
       state.auth.isAuthenticated = true

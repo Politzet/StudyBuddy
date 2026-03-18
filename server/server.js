@@ -615,9 +615,13 @@ app.post('/api/tasks', async (req, res) => {
       ...req.body,
       category: req.body.category || 'tasks',
       userId: req.body.userId || '',
+      moodleSyncId: String(req.body.moodleSyncId || '').trim(),
     })
     res.status(201).json(task)
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: 'This Moodle task was already imported' })
+    }
     if (error.name === 'ValidationError') {
       const details = formatValidationError(error)
       return res.status(400).json({ message: 'Validation failed', details })
@@ -701,9 +705,16 @@ app.post('/api/exams', async (req, res) => {
     if (!userId) {
       return res.status(400).json({ message: 'userId is required' })
     }
-    const exam = await Exam.create({ ...req.body, userId })
+    const exam = await Exam.create({
+      ...req.body,
+      userId,
+      moodleSyncId: String(req.body.moodleSyncId || '').trim(),
+    })
     return res.status(201).json(exam)
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: 'This Moodle exam was already imported' })
+    }
     if (error.name === 'ValidationError') {
       return res
         .status(400)
@@ -773,9 +784,16 @@ app.post('/api/projects', async (req, res) => {
     if (!userId) {
       return res.status(400).json({ message: 'userId is required' })
     }
-    const project = await Project.create({ ...req.body, userId })
+    const project = await Project.create({
+      ...req.body,
+      userId,
+      moodleSyncId: String(req.body.moodleSyncId || '').trim(),
+    })
     return res.status(201).json(project)
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: 'This Moodle project was already imported' })
+    }
     if (error.name === 'ValidationError') {
       return res
         .status(400)

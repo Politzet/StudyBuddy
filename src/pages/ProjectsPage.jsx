@@ -34,7 +34,6 @@ function ProjectsPage() {
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
-  const [moodleProgressMap, setMoodleProgressMap] = useState({})
   const [dbProgressMap, setDbProgressMap] = useState({})
   const [courseFilter, setCourseFilter] = useState('all')
   const [sparkleProjectId, setSparkleProjectId] = useState('')
@@ -90,38 +89,18 @@ function ProjectsPage() {
     error: coursesError,
     refetch: refetchCourses,
   } = useFetch(`${API_BASE_URL}/api/courses?r=${coursesRefreshKey}`)
-  const { data: moodleData } = useFetch(`${API_BASE_URL}/api/moodle/sync`)
   const projects = useMemo(() => (Array.isArray(data) ? data : []), [data])
-  const moodleProjects = useMemo(
-    () => (Array.isArray(moodleData?.projects) ? moodleData.projects : []),
-    [moodleData],
-  )
   const availableCourses = useMemo(
     () => (Array.isArray(coursesData) ? coursesData.map((course) => course.name).filter(Boolean).sort() : []),
     [coursesData],
   )
   const allProjects = useMemo(() => {
-    const imported = projects.map((project) => ({
+    return projects.map((project) => ({
       ...project,
       id: project._id,
       source: 'db',
     }))
-    const mocked = moodleProjects
-      .filter(
-        (moodleProject) =>
-          !projects.some(
-            (project) =>
-              project.title === moodleProject.title && project.course === moodleProject.course,
-          ),
-      )
-      .map((project) => ({
-        ...project,
-        id: project.id,
-        source: 'moodle',
-        progress: moodleProgressMap[project.id] ?? 0,
-      }))
-    return [...imported, ...mocked]
-  }, [projects, moodleProjects, moodleProgressMap])
+  }, [projects])
   const courses = useMemo(
     () => Array.from(new Set(allProjects.map((project) => project.course).filter(Boolean))).sort(),
     [allProjects],
@@ -320,11 +299,6 @@ function ProjectsPage() {
   }
 
   const handleProgressChange = async (project, nextProgress) => {
-    if (project.source === 'moodle') {
-      setMoodleProgressMap((prev) => ({ ...prev, [project.id]: nextProgress }))
-      return
-    }
-
     setDbProgressMap((prev) => ({ ...prev, [project.id]: nextProgress }))
     try {
       const response = await fetch(`${API_BASE_URL}/api/projects/${project._id}`, {
@@ -442,45 +416,31 @@ function ProjectsPage() {
                       />
                     </div>
                     <p className="mt-1 text-xs">
-                      Progress:{' '}
-                      {project.source === 'db'
-                        ? dbProgressMap[project.id] ?? project.progress ?? 0
-                        : project.progress ?? 0}
-                      %
+                      Progress: {dbProgressMap[project.id] ?? project.progress ?? 0}%
                     </p>
                     <input
                       type="range"
                       min="0"
                       max="100"
-                      value={
-                        project.source === 'db'
-                          ? dbProgressMap[project.id] ?? project.progress ?? 0
-                          : project.progress ?? 0
-                      }
+                      value={dbProgressMap[project.id] ?? project.progress ?? 0}
                       onChange={(event) => handleProgressChange(project, Number(event.target.value))}
                       className="mt-2 w-full accent-[#8b6b57]"
                     />
                     <div className="mt-3 flex gap-2">
-                      {project.source === 'db' ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => startEdit(project)}
-                            className="rounded-md bg-[#b38763] px-3 py-1.5 text-xs font-medium text-white"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(project)}
-                            className="rounded-md bg-[#6f3f3f] px-3 py-1.5 text-xs font-medium text-white"
-                          >
-                            Delete
-                          </button>
-                        </>
-                      ) : (
-                        <p className="text-xs">Source: Moodle projects feed</p>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => startEdit(project)}
+                        className="rounded-md bg-[#b38763] px-3 py-1.5 text-xs font-medium text-white"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(project)}
+                        className="rounded-md bg-[#6f3f3f] px-3 py-1.5 text-xs font-medium text-white"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </MotionLi>
                 ))}

@@ -78,52 +78,21 @@ function HomePage() {
   const examsQuery = `${API_BASE_URL}/api/exams?userId=${encodeURIComponent(userId)}`
   const projectsQuery = `${API_BASE_URL}/api/projects?userId=${encodeURIComponent(userId)}`
   const othersQuery = `${API_BASE_URL}/api/others?userId=${encodeURIComponent(userId)}`
-  const moodleQuery = `${API_BASE_URL}/api/moodle/sync`
 
   const { data: tasksData, error: tasksError } = useFetch(tasksQuery)
   const { data: examsData, error: examsError } = useFetch(examsQuery)
   const { data: projectsData, error: projectsError } = useFetch(projectsQuery)
   const { data: othersData, error: othersError } = useFetch(othersQuery)
-  const { data: moodleData, error: moodleError } = useFetch(moodleQuery)
 
   const tasks = useMemo(() => (Array.isArray(tasksData) ? tasksData : []), [tasksData])
   const exams = useMemo(() => (Array.isArray(examsData) ? examsData : []), [examsData])
   const projects = useMemo(() => (Array.isArray(projectsData) ? projectsData : []), [projectsData])
   const others = useMemo(() => (Array.isArray(othersData) ? othersData : []), [othersData])
-  const moodleExams = useMemo(
-    () => (Array.isArray(moodleData?.exams) ? moodleData.exams : []),
-    [moodleData],
-  )
-  const moodleProjects = useMemo(
-    () => (Array.isArray(moodleData?.projects) ? moodleData.projects : []),
-    [moodleData],
-  )
   const allTasks = useMemo(() => {
     return userId ? tasks.filter((task) => String(task.userId || '') === String(userId)) : []
   }, [tasks, userId])
-  const allExams = useMemo(() => {
-    const manualExams = Array.isArray(exams) ? exams : []
-    const extraMoodleExams = moodleExams.filter(
-      (moodleExam) =>
-        !manualExams.some(
-          (exam) =>
-            exam.course === moodleExam.course &&
-            new Date(exam.date).toISOString().slice(0, 10) === moodleExam.date &&
-            String(exam.time || '').trim() === String(moodleExam.time || '').trim(),
-        ),
-    )
-    return [...manualExams, ...extraMoodleExams]
-  }, [exams, moodleExams])
-  const allProjects = useMemo(() => {
-    const manualProjects = Array.isArray(projects) ? projects : []
-    const extraMoodleProjects = moodleProjects.filter(
-      (moodleProject) =>
-        !manualProjects.some(
-          (project) => project.title === moodleProject.title && project.course === moodleProject.course,
-        ),
-    )
-    return [...manualProjects, ...extraMoodleProjects]
-  }, [projects, moodleProjects])
+  const allExams = useMemo(() => (Array.isArray(exams) ? exams : []), [exams])
+  const allProjects = useMemo(() => (Array.isArray(projects) ? projects : []), [projects])
   const allOthers = useMemo(
     () => (userId ? others.filter((item) => String(item.userId || '') === String(userId)) : []),
     [others, userId],
@@ -308,7 +277,7 @@ function HomePage() {
     })
   }
 
-  const anyError = tasksError || examsError || projectsError || othersError || moodleError
+  const anyError = tasksError || examsError || projectsError || othersError
   const openCalendarCardClass = isDark
     ? 'border-[#a68467]/55 bg-[#4a372b]/55 text-[#f6e9d5] shadow-none'
     : 'border-[#c2a485]/70 bg-[#f6ecdf]/65 text-[#5a3f2f] shadow-none'

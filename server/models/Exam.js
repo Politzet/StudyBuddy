@@ -38,8 +38,21 @@ const examSchema = new mongoose.Schema(
         trim: true,
       },
     },
+    moodleSyncId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
   },
   { timestamps: true },
+)
+
+examSchema.index(
+  { userId: 1, moodleSyncId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { moodleSyncId: { $exists: true, $type: 'string', $ne: '' } },
+  },
 )
 
 const Exam = mongoose.model('Exam', examSchema)
