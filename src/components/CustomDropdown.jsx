@@ -69,25 +69,15 @@ function CustomDropdown({
 
     const rect = buttonRef.current.getBoundingClientRect()
     const viewportHeight = window.innerHeight || 0
-    const estimatedHeight = 264
-    const spaceBelow = viewportHeight - rect.bottom - 12
-    const spaceAbove = rect.top - 12
-    const openUpward = spaceBelow < estimatedHeight && spaceAbove > spaceBelow
+    const gap = 8
 
-    const top = openUpward
-      ? Math.max(8, rect.top - Math.min(estimatedHeight, spaceAbove))
-      : Math.max(8, rect.bottom + 8)
-
-    const maxHeight = Math.max(
-      140,
-      Math.min(320, openUpward ? rect.top - 12 : viewportHeight - rect.bottom - 12),
-    )
-
+    // Always open below the trigger (product preference). Use maxHeight + scroll if near
+    // the bottom of the viewport.
     setMenuStyle({
-      top,
+      top: Math.max(8, rect.bottom + gap),
       left: rect.left,
       width: rect.width,
-      maxHeight,
+      maxHeight: Math.max(140, Math.min(320, viewportHeight - rect.bottom - 12)),
     })
   }
 
