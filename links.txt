@@ -1,0 +1,3 @@
+https://github.com/Politzet/StudyBuddy.git
+https://studybuddy-rcc6.onrender.com
+https://study-buddy-wizard.vercel.app/home
