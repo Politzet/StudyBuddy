@@ -79,10 +79,12 @@ function HomePage() {
   const projectsQuery = `${API_BASE_URL}/api/projects?userId=${encodeURIComponent(userId)}`
   const othersQuery = `${API_BASE_URL}/api/others?userId=${encodeURIComponent(userId)}`
 
-  const { data: tasksData, error: tasksError } = useFetch(tasksQuery)
-  const { data: examsData, error: examsError } = useFetch(examsQuery)
-  const { data: projectsData, error: projectsError } = useFetch(projectsQuery)
-  const { data: othersData, error: othersError } = useFetch(othersQuery)
+  const { data: tasksData, error: tasksError, loading: tasksLoading } = useFetch(tasksQuery)
+  const { data: examsData, error: examsError, loading: examsLoading } = useFetch(examsQuery)
+  const { data: projectsData, error: projectsError, loading: projectsLoading } = useFetch(projectsQuery)
+  const { data: othersData, error: othersError, loading: othersLoading } = useFetch(othersQuery)
+
+  const dashboardLoading = tasksLoading || examsLoading || projectsLoading || othersLoading
 
   const tasks = useMemo(() => (Array.isArray(tasksData) ? tasksData : []), [tasksData])
   const exams = useMemo(() => (Array.isArray(examsData) ? examsData : []), [examsData])
@@ -278,6 +280,7 @@ function HomePage() {
   }
 
   const anyError = tasksError || examsError || projectsError || othersError
+  const loadingMessageClass = isDark ? 'text-[#eadccf]' : 'text-[#6b5447]'
   const openCalendarCardClass = isDark
     ? 'border-[#a68467]/55 bg-[#4a372b]/55 text-[#f6e9d5] shadow-none'
     : 'border-[#c2a485]/70 bg-[#f6ecdf]/65 text-[#5a3f2f] shadow-none'
@@ -328,6 +331,12 @@ function HomePage() {
 
       {anyError ? <div className={getAlertClass('error', isDark)}>{anyError}</div> : null}
 
+      {dashboardLoading ? (
+        <p className={`mt-6 text-sm ${loadingMessageClass}`}>Loading dashboard...</p>
+      ) : null}
+
+      {!dashboardLoading ? (
+        <>
       <MotionDiv
         variants={dashboardItem}
         className={`academy-card mt-6 p-6 text-center ${openCalendarCardClass}`}
@@ -406,20 +415,6 @@ function HomePage() {
         ) : null}
       </MotionDiv>
 
-      <AcademyCalendarModal
-        isOpen={showCalendarModal}
-        onClose={() => setShowCalendarModal(false)}
-        isDark={isDark}
-        selectedDay={selectedCalendarDay}
-        onDayChange={setSelectedCalendarDay}
-        normalizeDate={normalizeDate}
-        filteredEventsByDate={filteredCalendarEventsByDate}
-        selectedEvents={selectedCalendarEvents}
-        calendarTypeFilter={calendarTypeFilter}
-        onToggleType={toggleCalendarType}
-        onResetFilters={resetCalendarFilters}
-      />
-
       <MotionDiv
         variants={dashboardItem}
         className={`academy-card mx-auto mt-6 w-full max-w-6xl p-4 ${openCalendarCardClass}`}
@@ -485,6 +480,22 @@ function HomePage() {
           </MotionButton>
         ))}
       </MotionDiv>
+        </>
+      ) : null}
+
+      <AcademyCalendarModal
+        isOpen={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        isDark={isDark}
+        selectedDay={selectedCalendarDay}
+        onDayChange={setSelectedCalendarDay}
+        normalizeDate={normalizeDate}
+        filteredEventsByDate={filteredCalendarEventsByDate}
+        selectedEvents={selectedCalendarEvents}
+        calendarTypeFilter={calendarTypeFilter}
+        onToggleType={toggleCalendarType}
+        onResetFilters={resetCalendarFilters}
+      />
       </div>
     </MotionSection>
   )

@@ -63,9 +63,14 @@ function RegisterPage() {
 
     const nextFieldErrors = {}
     const trimmedEmail = formData.email.trim()
+    const trimmedUserName = formData.userName.trim()
 
     if (!emailPattern.test(trimmedEmail)) {
       nextFieldErrors.email = 'Please enter a valid email format.'
+    }
+
+    if (trimmedUserName.length < 2) {
+      nextFieldErrors.userName = 'User name must be at least 2 characters.'
     }
 
     if (formData.password.length < 8) {
@@ -88,7 +93,7 @@ function RegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: trimmedEmail,
-          userName: formData.userName,
+          userName: trimmedUserName,
           password: formData.password,
         }),
       })
@@ -162,6 +167,9 @@ function RegisterPage() {
                 className="w-full rounded-md border border-[#d4af37]/40 bg-[#f7efe4]/85 px-4 py-2.5 text-[#453434] outline-none placeholder:text-[rgba(101,84,71,0.6)] focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/25"
                 required
               />
+              {fieldErrors.userName ? (
+                <p className="mt-1 text-sm text-red-700">{fieldErrors.userName}</p>
+              ) : null}
             </div>
             <div className="mx-auto w-full max-w-[400px]">
               <input

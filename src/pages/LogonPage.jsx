@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { API_BASE_URL } from '../config/api'
@@ -24,15 +24,13 @@ function LogonPage() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const auth = useSelector((state) => state.user.auth)
+  const isLoggedIn = useSelector((state) => state.user.isLoggedIn)
   const [bgIndex, setBgIndex] = useState(0)
   const [logoIndex, setLogoIndex] = useState(0)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [emailError, setEmailError] = useState('')
-  const [showSuccessBurst, setShowSuccessBurst] = useState(false)
-  const [fadeFormAway, setFadeFormAway] = useState(false)
-  const successPendingRef = useRef(false)
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   const handleBgError = () => {
@@ -44,20 +42,10 @@ function LogonPage() {
   }
 
   useEffect(() => {
-    if (!successPendingRef.current || !auth.isAuthenticated || auth.isLoading) {
-      return
+    if (isLoggedIn) {
+      navigate('/home', { replace: true })
     }
-    setShowSuccessBurst(true)
-    setFadeFormAway(true)
-
-    const navigateTimer = setTimeout(() => {
-      successPendingRef.current = false
-      setShowSuccessBurst(false)
-      navigate('/home')
-    }, 1050)
-
-    return () => clearTimeout(navigateTimer)
-  }, [auth.isAuthenticated, auth.isLoading, navigate])
+  }, [isLoggedIn, navigate])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -84,7 +72,6 @@ function LogonPage() {
       }
 
       const userData = await response.json()
-      successPendingRef.current = true
       dispatch(
         login({
           name: userData.userName,
@@ -93,7 +80,6 @@ function LogonPage() {
         }),
       )
     } catch (loginError) {
-      successPendingRef.current = false
       setError(loginError.message)
     } finally {
       dispatch(setAuthLoading(false))
@@ -109,16 +95,12 @@ function LogonPage() {
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div className="absolute inset-0 bg-white/55" />
-      {(auth.isLoading || showSuccessBurst) ? (
+      {auth.isLoading ? (
         <div className="absolute inset-0 bg-[#1e1a17]/45 backdrop-saturate-50" />
       ) : null}
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4">
-        <div
-          className={`w-full max-w-lg p-8 transition-opacity duration-500 ${
-            fadeFormAway ? 'opacity-0' : 'opacity-100'
-          }`}
-        >
+        <div className="w-full max-w-lg p-8 transition-opacity duration-500 opacity-100">
           <div className="mb-4 flex justify-center">
             <img
               src={logoCandidates[logoIndex]}
@@ -182,9 +164,9 @@ function LogonPage() {
         </div>
       </div>
 
-      {auth.isLoading || showSuccessBurst ? (
+      {auth.isLoading ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <MagicLoader burst={showSuccessBurst} />
+          <MagicLoader burst={false} />
         </div>
       ) : null}
     </section>

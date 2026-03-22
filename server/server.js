@@ -15,7 +15,8 @@ import FavoriteVideo from './models/FavoriteVideo.js'
 dotenv.config()
 
 const app = express()
-const port = Number(process.env.PORT) || 5000
+// Default 5050: macOS often binds AirPlay Receiver to 5000, which breaks local API.
+const port = Number(process.env.PORT) || 5050
 const PASSWORD_SALT_ROUNDS = 10
 const DEFAULT_CATEGORY_NAMES = ['Tasks', 'Tests', 'Projects', 'Other']
 const MONGO_CONNECT_MAX_ATTEMPTS = Number(process.env.MONGO_CONNECT_MAX_ATTEMPTS || 0)

@@ -1,238 +1,109 @@
 # StudyBuddy
 
-## What this project is
+## What is this?
 
-StudyBuddy is a full-stack web app I built for managing school work in one place instead of scattered notes and separate tools. After registering and logging in, you can track tasks, exams, projects, and miscellaneous items, browse a dashboard that pulls that data together, manage courses, optionally pull mock “Moodle” assignments into the app, and use a resources area that searches YouTube by course and assignment and lets you save favorites with notes.
+StudyBuddy is a full-stack web app I built to keep school work in one place instead of scattered notes and separate tools. After you register and log in, you can track tasks, exams, projects, and miscellaneous items, browse a dashboard that pulls it all together, manage courses, import mock “Moodle” assignments into the app, and use a Learning Hub that searches YouTube by course and assignment and saves favorites with notes.
 
-The idea is practical: one login, persistent data in a real database, and separate screens for each kind of item so the UI stays organized.
+The idea is straightforward: one login, real data in a database, and separate screens for each kind of item so the UI stays tidy and pleasant to use.
 
-## Main features
+## Try it live
 
-- **Account flow:** Register with email, username, and password; log in with email and password. The client stores a small auth payload in `localStorage` so a refresh keeps you logged in until you log out (there is no separate token UI; it is session-style usage on top of stored user info).
+My deployment is online:
 
-- **Home dashboard:** Overview of your tasks, exams, projects, and “other” items, with course filtering, counts, and highlights like upcoming exams and tasks due soon. There is a calendar modal to browse items by day.
+- **The site (client):** [study-buddy-wizard.vercel.app](https://study-buddy-wizard.vercel.app)  
+  This is the React app in the browser — sign in, explore the UI, and use the app.
 
-- **Tasks:** Full list with course filter, add/edit in a modal, delete, status buttons (not started / in progress / done / blocked), and optional “study days” validation against the due date. Tasks are tied to the logged-in user on the API side.
+- **The server (API):** [studybuddy-rcc6.onrender.com](https://studybuddy-rcc6.onrender.com)  
+  This is the Express API talking to MongoDB. You can check it is up with `GET /api/health` (for example `https://studybuddy-rcc6.onrender.com/api/health`). The Vercel deployment is configured to use this URL as the API base.
 
-- **Exams:** CRUD for exams with course, date, time, study days, and location (building and room).
+If you run the project locally from source, set `VITE_API_BASE_URL` to `http://localhost:5050` (or whatever port your server uses) so the browser talks to your machine instead of Render.
 
-- **Projects:** CRUD with title, course, deadline, study days, and a progress percentage you can adjust with a slider (updates persist via the API).
+## What the app does
 
-- **Other:** Items grouped by a category name (default “Other”), with optional deadline and open/done status.
+**Account:** Register with email, username, and password; log in with email and password. The client stores a small user payload in `localStorage` so a refresh does not log you out until you sign out (there is no separate “token” screen — it behaves like a session on top of stored info).
 
-- **Add task (dedicated form):** Route `/form` provides a longer form for adding a task plus inline course management (add / edit / delete courses) with some Hebrew labels in that section.
+**Home:** An overview of tasks, exams, projects, and “other” items, with course filtering, counts, and highlights such as upcoming exams and tasks due soon. There is also a calendar modal to browse by day.
 
-- **Learning hub (resources):** Picks courses and assignments from the same mock Moodle payload the sync page uses, builds search queries, calls the YouTube Data API from the browser when `VITE_YOUTUBE_API_KEY` is set, and lets you save favorites with personal notes (stored on the server per user).
+**Tasks:** A list with course filter, add/edit in a modal, delete, status controls (not started / in progress / done, and so on), and optional “study days” validation against the due date. Tasks are tied to the logged-in user on the API side.
 
-- **Moodle sync:** Reads bundled mock Moodle data from the server, shows tasks, exams, and projects you can import one by one into your real collections, and records a “last sync” timestamp in client state.
+**Exams and projects:** Full CRUD — dates, locations, deadlines, and project progress with a slider that persists on the server.
 
-- **Theme:** Light/dark preference is stored in `localStorage` and applied via a React context.
+**Other:** Items grouped by a category name (default “Other”), with an optional deadline and open/done status.
 
-- **404:** Unknown routes show a simple not-found page.
+**Add-task form:** At `/form` there is a longer form for adding a task plus inline course management (some labels in that section are in Hebrew).
 
-## Tech stack
+**Learning Hub (at `/api` — the path name is historical; it is not REST API docs):** Builds search queries, calls YouTube from the browser when an API key is set, and saves favorites with personal notes on the server.
 
-**Client**
+**Moodle sync (demo):** The server returns mock tasks and exams; you can import them one by one into your real collections.
 
-- React (Vite as the build tool)
-- React Router for navigation
-- Redux Toolkit for global state (user + a small dashboard slice)
-- Tailwind CSS for styling
-- Framer Motion for page transitions and some UI motion
-- `react-calendar` is included for calendar UI where used on the home flow
+**Theme:** Light/dark preference is stored in `localStorage` via React context.
 
-**Server**
+**Missing pages:** A simple 404 screen.
 
-- Node.js with Express
-- Mongoose for MongoDB
-- `bcrypt` for password hashing on register/login
-- `cors` with logic for localhost and optional extra origins from env
-- `dotenv` for `server/.env`
+## How it is built (short)
 
-**Database**
+**Client:** React with Vite, React Router, Redux Toolkit for global state (user and a small dashboard slice), Tailwind, Framer Motion, and `react-calendar` where needed.
 
-- MongoDB (typically Atlas in practice), using a connection string from environment variables.
+**Server:** Node with Express, Mongoose for MongoDB, bcrypt for password hashing, CORS (including localhost and optional extra origins from env), and dotenv for `server/.env`.
 
-## Project structure (short guide)
+**Folders:** Route-level screens live under `src/pages/`; shared pieces under `src/components/`; hooks such as `useFetch` (loading, error, refetch) and `useLocalStorage` under `src/hooks/`; Redux under `src/store/`; API base URL comes from `VITE_API_BASE_URL` in `src/config/api.js`. The server is mostly in `server/server.js` with Mongoose models under `server/models/`.
 
-- **`src/pages/`** – One file per route-level screen (login, register, home, tasks, exams, projects, other, add-task form, resources, moodle sync, 404). This is where most fetch calls, forms, and list UI live.
-
-- **`src/components/`** – Reusable pieces: navbar, breadcrumbs, modals, dropdown, calendar modal, loaders, etc.
-
-- **`src/hooks/`** – `useFetch` (GET + loading/error/refetch pattern) and `useLocalStorage` (JSON read/write wrapper).
-
-- **`src/store/`** – Redux store setup, `userSlice` (auth and last task name), `dashboardSlice` (selected section label, Moodle sync time, last-created item id for a short “sparkle” highlight).
-
-- **`src/context/`** – `ThemeContext` wraps `useLocalStorage` for theme.
-
-- **`src/config/api.js`** – Reads `VITE_API_BASE_URL` with a localhost fallback.
-
-- **`src/constants/`** – Shared constants such as task status labels/options.
-
-- **`server/server.js`** – Single Express file defining routes and Mongo models usage (models live under `server/models/`).
-
-## Routing and main pages
-
-Public routes (no `ProtectedRoute` wrapper):
-
-| Path | Page | Purpose |
-|------|------|---------|
-| `/` | Logon | Email + password login; redirects into the app after success. |
-| `/register` | Register | Create an account; sends you back to login. |
-
-Protected routes (require `state.user.isLoggedIn`; otherwise redirect to `/`):
-
-| Path | Page | Purpose |
-|------|------|---------|
-| `/home` | Home | Dashboard and calendar entry point. |
-| `/form` | AddTaskPage | Standalone “add task” form and course admin block. |
-| `/tasks` | TasksPage | Task list and modals. |
-| `/exams` | ExamsPage | Exam list and modals. |
-| `/projects` | ProjectsPage | Project list, progress control, modals. |
-| `/other` | OtherPage | Other items by group, modals, status toggles. |
-| `/api` | ResourcesPage | YouTube search + favorites (path name is historical; it is the learning hub UI, not API docs). |
-| `/moodle-sync` | MoodleSync | Import mock Moodle items. |
-
-Other route behavior:
-
-- `/tests` redirects to `/exams`.
-- `*` shows `NotFoundPage`.
-
-## State management, hooks, and local storage
-
-**Redux**
-
-- **`userSlice`:** Holds `user` (name, email, id), `isLoggedIn`, `lastTaskAdded`, and a small `auth` object used during login loading. Login and logout also write or clear a JSON blob in `localStorage` under `studybuddy_auth`. When the logged-in user id changes, a couple of keys (`add-task-form`, `tasks-course-filter`) are cleared so drafts do not leak between accounts.
-
-- **`dashboardSlice`:** Tracks `selectedCategory` when navigating from the home cards, `latestSyncAt` after Moodle sync, and `lastCreatedItem` so newly created entities can flash a short highlight before the flag is cleared.
-
-**Custom hooks**
-
-- **`useFetch(url)`** – If `url` is empty, it resets to idle. Otherwise it GETs the URL, exposes `data`, `loading`, `error`, and `refetch` (increments an internal counter to re-run the effect). Used across pages for tasks, exams, projects, courses, favorites, Moodle payload, etc.
-
-- **`useLocalStorage(key, initial)`** – Keeps React state in sync with `JSON.stringify` / `JSON.parse` on a given key; used for theme and for things like the tasks course filter and the add-task draft form.
-
-**localStorage summary**
-
-- Auth snapshot (not the password), theme, task filter, and add-task draft keys as above. Parsing errors fall back to the initial value; write errors are logged to the console.
-
-## API overview (server)
-
-All routes below are under the Express app in `server/server.js`. The client typically uses `API_BASE_URL` from `VITE_API_BASE_URL` (see `src/config/api.js`).
-
-**Health**
-
-- `GET /api/health` – Simple `{ ok: true }` check.
-
-**Auth**
-
-- `POST /api/auth/register` – Creates a user; password is hashed with bcrypt.
-- `POST /api/auth/login` – Validates credentials and returns user fields the client stores.
-
-**Core study entities (CRUD-style)**
-
-- **Tasks:** `GET/POST /api/tasks`, `PUT/DELETE /api/tasks/:id` (queries often include `userId` and sometimes `category`).
-- **Exams:** `GET/POST /api/exams`, `PUT/DELETE /api/exams/:id`.
-- **Projects:** `GET/POST /api/projects`, `PUT/DELETE /api/projects/:id`.
-- **Other items:** `GET/POST /api/others`, `PUT/DELETE /api/others/:id`.
-
-**Courses**
-
-- `GET/POST /api/courses`, `PUT/DELETE /api/courses/:id` – Shared course list used across tasks, exams, projects, forms, and Moodle import helpers.
-
-**Categories**
-
-- `GET/POST /api/categories` – Implemented on the server for per-user category documents. The current React app does not call these routes; the “Other” page builds its filter list from item data already loaded from `/api/others`.
-
-**Moodle mock data**
-
-- `GET /api/moodle/sync` – Returns mock tasks, exams, and projects for the sync and resources pages (not a live Moodle connection).
-
-**Favorites (videos)**
-
-- `GET/POST /api/favorite-videos`, `PUT/DELETE /api/favorite-videos/:id` – Persists saved YouTube entries and notes per user.
-
-**Curated blogs**
-
-- `GET /api/resources/blogs` – Returns static blog suggestions from the server. The current client code does not fetch this endpoint (it is available if you extend the UI later).
-
-The server validates with Mongoose where models enforce rules, and returns JSON error messages the client can surface in alerts.
+**Routes:** Public (no login): `/` for sign-in, `/register` for sign-up. After login: `/home` for the dashboard, `/tasks`, `/exams`, `/projects`, `/other`, `/form` for the add-task form, `/api` for the Learning Hub, `/moodle-sync` for Moodle import. `/tests` redirects to `/exams`. Anything else hits the 404 page.
 
 ## Environment variables
 
-**Client – `.env` in the project root (copy from `.env.example`)**
+Copy `.env.example` to `.env` in the project root:
 
-- `VITE_API_BASE_URL` – Base URL of the API (for local work, `http://localhost:5050` matches a typical `PORT=5050` server).
+- **`VITE_API_BASE_URL`** — Base URL for the API. Locally: `http://localhost:5050` (matches a server on port 5050). In production, the Vercel client points at the API on Render ([studybuddy-rcc6.onrender.com](https://studybuddy-rcc6.onrender.com)).
+- **`VITE_YOUTUBE_API_KEY`** — YouTube Data API key for the Learning Hub. If it is empty, the UI explains that live search is not available.
+- **`VITE_NEWS_API_KEY`** — Listed in the example file but the current app does not use it; you can leave it blank.
 
-- `VITE_YOUTUBE_API_KEY` – YouTube Data API key. The resources page reads this at runtime. If it is empty, the UI explains that live search will not work.
+For the server, copy `server/.env.example` to `server/.env`:
 
-- `VITE_NEWS_API_KEY` – Listed in `.env.example` but nothing in the current `src/` tree reads it, so you can leave it blank unless you add your own feature later.
+- **`MONGO_URI`** — MongoDB connection string (required for the app to talk to the database).
+- **`PORT`** — Port the API listens on (the code defaults to `5050` to avoid macOS binding port `5000` for AirPlay). When running locally, `VITE_API_BASE_URL` on the client should match that port.
 
-**Server – `server/.env` (copy from `server/.env.example`)**
+Optional on the server: **`CORS_ORIGINS`** (comma-separated extra browser origins), and **`MONGO_CONNECT_MAX_ATTEMPTS`** / **`MONGO_CONNECT_RETRY_DELAY_MS`** if you want to tune MongoDB connection retries.
 
-- `MONGO_URI` – MongoDB connection string (required for the app to talk to the database).
+## How to run it on your machine
 
-- `PORT` – Port the API listens on (example in the repo uses `5050`; if you omit it, the code falls back to `5000`, so keep client and server ports aligned).
+Install dependencies from the root (there is a `postinstall` that also installs `server/`; if something fails, run `npm --prefix server install` manually):
 
-Optional server variables (only if you need them):
+```bash
+npm install
+```
 
-- `CORS_ORIGINS` – Comma-separated extra allowed browser origins for the deployed frontend.
+Create the `.env` files as described above — do not commit real secrets to git.
 
-- `MONGO_CONNECT_MAX_ATTEMPTS` and `MONGO_CONNECT_RETRY_DELAY_MS` – Control startup retry behavior if the database is slow to accept connections.
+In one terminal, start the API:
 
-## How to run locally
+```bash
+npm run dev:server
+```
 
-1. **Clone or open the repo** and install dependencies from the root:
+Or `cd server` and `npm run dev` (nodemon). For a plain run without nodemon: `npm start` or `node server.js`.
 
-   ```bash
-   npm install
-   ```
+In a second terminal, from the root, start the client:
 
-   The root `package.json` runs `postinstall` so dependencies inside `server/` are installed as well. If anything looks wrong, you can still run `npm --prefix server install` manually.
+```bash
+npm run dev
+```
 
-2. **Create env files** (do not commit real secrets):
-
-   - Copy `.env.example` to `.env` in the root and fill `VITE_API_BASE_URL` (and `VITE_YOUTUBE_API_KEY` if you want YouTube search).
-
-   - Copy `server/.env.example` to `server/.env` and set a real `MONGO_URI`. Set `PORT` to the same port your client expects (for example `5050`).
-
-3. **Start the API** (from the repo root, either of these is fine):
-
-   ```bash
-   npm run dev:server
-   ```
-
-   or
-
-   ```bash
-   cd server
-   npm run dev
-   ```
-
-   `dev` uses nodemon; `npm start` / `node server.js` is the plain production-style start.
-
-4. **Start the client** in a second terminal (from the repo root):
-
-   ```bash
-   npm run dev
-   ```
-
-   Vite prints a local URL (by default something like `http://localhost:5173`). Open that in the browser.
-
-5. **Log in flow:** Register at `/register`, then log in at `/`. Protected routes redirect to `/` if you are not logged in.
+Vite will print a local URL (often something like `http://localhost:5173`). Open it in the browser, register at `/register`, then sign in at `/`. Protected screens redirect to `/` if you are not logged in.
 
 ## Database
 
-Data lives in MongoDB. Each major entity type (users, tasks, exams, projects, other items, courses, favorite videos, etc.) has a Mongoose model under `server/models/`. If `MONGO_URI` is wrong or the cluster blocks your IP, the server logs connection failures and the client will show fetch errors on the pages that depend on the API.
+Data lives in MongoDB. Each main entity (users, tasks, exams, projects, courses, favorites, and so on) has a Mongoose model under `server/models/`. If `MONGO_URI` is wrong or the cluster blocks your IP, the server logs connection errors and the browser shows fetch errors on pages that depend on the API.
 
-## Notes for whoever grades or runs this
+## Notes for reviewers
 
-- The **protected route** check is entirely client-side (`isLoggedIn` in Redux). Refreshing the page keeps you “in” because auth is rehydrated from `localStorage`. It assumes the API still accepts requests for that user id; there is no separate step that re-validates the session with the server on every load.
+Route protection for “logged-in only” screens is client-side (`isLoggedIn` in Redux). Refresh keeps you signed in because auth is rehydrated from `localStorage`. There is no separate server round-trip on every page load to “re-validate” a session — it assumes the API still accepts requests for the stored user id.
 
-- **CORS:** Localhost origins are allowed by default. For a hosted frontend, you may need `CORS_ORIGINS` (and the server file already whitelists specific known Vercel-style origins for this project—check `server/server.js` if you deploy somewhere new).
+CORS allows localhost by default; for a new deployed domain you may need to add an origin in `CORS_ORIGINS` or update the list in `server/server.js`.
 
-- **Route `/api`:** Despite the path, it is the **Learning Hub / resources UI**, not REST documentation.
+The `/api` route in the UI is the **Learning Hub / resources screen**, not API documentation.
 
-- **YouTube:** Search runs in the browser using your key; without `VITE_YOUTUBE_API_KEY`, favorites and layout still load but search is limited to the messaging in the UI.
+YouTube search runs in the browser with your key; without `VITE_YOUTUBE_API_KEY` you can still see favorites and layout, but live search is limited to what the UI explains.
 
-- **Port mismatch:** If the server falls back to port `5000` because `PORT` is unset, update `VITE_API_BASE_URL` to match or define `PORT` explicitly in `server/.env`.
+If the server port and client do not match, update `VITE_API_BASE_URL` to the URL the server prints when it starts, or set `PORT` in `server/.env` (the code defaults to `5050`).
+

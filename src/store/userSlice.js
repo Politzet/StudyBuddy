@@ -82,12 +82,6 @@ const userSlice = createSlice({
       state.auth.isLoading = false
       persistAuthState(null, false)
     },
-    updateUsername: (state, action) => {
-      if (state.user) {
-        state.user.name = action.payload
-        persistAuthState(state.user, state.isLoggedIn)
-      }
-    },
     setLastTaskAdded: (state, action) => {
       state.lastTaskAdded = action.payload
     },
@@ -97,6 +91,5 @@ const userSlice = createSlice({
   },
 })
 
-export const { login, logout, updateUsername, setLastTaskAdded, setAuthLoading } =
-  userSlice.actions
+export const { login, logout, setLastTaskAdded, setAuthLoading } = userSlice.actions
 export default userSlice.reducer
